@@ -18,7 +18,11 @@ class FatCatMap
 
                 consider_preinit: (preinit) =>
                     @sys.preinit = preinit
-                    (@sys.install(base_obj) for base_obj in kind if kind?) for kind of preinit
+
+                    for k, kind of preinit
+                        for base_obj in kind if kind?
+                            @sys.install(base_obj)
+
                     return preinit
 
                 sniff_headers: (document) =>
@@ -43,7 +47,7 @@ class FatCatMap
 
                 obj = new obj(@, window)
 
-                if obj.export? and obj.export is 'public'
+                if not obj.export? or obj.export is 'public'
                     window[mount_point] = obj
                     
                 if sys_mount
