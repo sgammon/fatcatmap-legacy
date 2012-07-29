@@ -1,0 +1,13 @@
+app/
+*.pyc
+*.pyo
+.DS_Store
+*.DS_Store
+.coverage
+.egg-info
+app/lib/dist
+tests/
+var/*.store
+*.svn
+.svn
+app/.sass-cache
