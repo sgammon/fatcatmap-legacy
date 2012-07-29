@@ -4,6 +4,7 @@
 <!-- Core Scripts -->
 <script src="{{ asset.script('modernizr', 'core') }}"></script>
 <script src="{{ asset.script('underscore', 'core') }}"></script>
+<script src="{{ asset.script('d3', 'core') }}"></script>
 
 <!-- Base Scripts -->
 <script src="/_ah/channel/jsapi"></script>
@@ -13,19 +14,17 @@
 {%- if page.services or page.analytics -%}
 <script>
 {% block page_services %}
-	{%- if page.services -%}
-	{% from "macros/page_object.js" import build_page_object %}
-	{{ build_page_object(page.services.services_manifest, page.services.config, page) }}
-	{%- endif -%}
+{%- if page.services -%}
+{% from "macros/page_object.js" import build_page_object %}
+{{ build_page_object(page.services.services_manifest, page.services.config, page) }}
+{%- endif -%}
 {% endblock %}
 
 {% block page_analytics %}
-	{%- if not util.config.debug -%} {# // No analytics on the dev server... #}
-	{%- if page.analytics -%}
-		{% from "macros/page_analytics.js" import google_analytics_async %}
-		{{ google_analytics_async(page.analytics) }}
-	{%- endif -%}
-	{%- endif -%}
+{%- if page.analytics -%}
+	{% from "macros/page_analytics.js" import google_analytics_async %}
+	{{ google_analytics_async(page.analytics) }}
+{%- endif -%}
 {% endblock %}
 </script>
 {%- endif -%}

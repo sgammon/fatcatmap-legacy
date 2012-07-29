@@ -8,7 +8,7 @@ class Landing(WebHandler):
 
     def get(self):
 
-        ''' Render the template at "app/templates/main/helloworld.html". '''
+        ''' Render the template at "app/templates/main/mapper.html". '''
 
-        self.render('main/helloworld.html')
+        self.render('main/mapper.html')
         return

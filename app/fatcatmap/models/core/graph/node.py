@@ -3,6 +3,9 @@ from fatcatmap.models import Model
 
 class Node(Model):
 
-	''' Represents a node on the graph. '''
+	''' Represents an object in a certain context. '''
 
-	pass
+	label = ndb.StringProperty()
+	native = ndb.KeyProperty()
+	owner = ndb.KeyProperty()
+	scope = ndb.StringProperty(repeated=True)

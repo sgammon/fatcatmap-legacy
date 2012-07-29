@@ -17,16 +17,9 @@ $(document).ready(function (){
 	{% endblock %}
 
 	{% if services != null %}
-	$.apptools.api.rpc.factory([
-		{%- for service, action, cfg, opts in services -%}
-			{
-				name: '{{ service }}',
-				base_uri: '{{ action }}',
-				methods: [{%- for i, method in enumerate(cfg.methods) -%}'{{ method }}'{%- if i != (len(cfg.methods) - 1) %},{%- endif -%}{%- endfor -%}],
-				config: {{ util.converters.json.dumps(opts)|safe }}
-			}{%- if not loop.last -%},{%- endif -%}
-		{%- endfor -%}
-	]);
+	{%- for service, action, cfg, opts in services -%}
+		$.apptools.api.rpc.factory('{{ service }}', '{{ action }}', [{%- for i, method in enumerate(cfg.methods) -%}'{{ method }}'{%- if i != (len(cfg.methods) - 1) %},{%- endif -%}{%- endfor -%}], {%- autoescape false -%}{{ util.converters.json.dumps(opts) }}{%- endautoescape -%});
+	{%- endfor -%}
 	{% endif %}
 
 	{% if page.open_channel %}

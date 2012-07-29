@@ -156,7 +156,7 @@ handlers:
 - url: /assets/style/static
   static_dir: assets/style/static
   mime_type: text/css
-  expiration: "364d"
+  expiration: "1m"
 
 # Scripts (Static)
 - url: /assets/js/static
