@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from project.routing.urls import rules
+from fatcatmap.routing.urls import rules
 
 
 def get_rules():

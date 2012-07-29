@@ -59,7 +59,7 @@ class RPCRequest extends CoreObject
 
         ## AJAX Settings
         @ajax =
-            accepts: 'application/json'
+            accept: 'application/json'
             async: true
             cache: true
             global: true
@@ -244,17 +244,6 @@ class CoreRPCAPI extends CoreAPI
 
                     "X-ServiceTransport": "AppTools/JSONRPC"
 
-        if apptools.sys.libraries.resolve('jQuery') != false
-            # Splice in our custom factory
-            $.ajaxSetup(
-
-                global: true
-                xhr: () =>
-                    return @internals.transports.xhr.factory()
-                headers: @internals.config.headers
-
-            )
-
         # Build internal API
         @rpc =
 
@@ -270,8 +259,16 @@ class CoreRPCAPI extends CoreAPI
             used_ids: []
 
             # Creates RPCAPIs
-            factory: (name, base_uri, methods, config) =>
-                apptools.api[name] = new RPCAPI(name, base_uri, methods, config)
+            factory: (name_or_apis, base_uri, methods, config) =>
+
+                if Util.is_array(name_or_apis)
+                    (apptools.api[(name = item.name)] = new RPCAPI(name, item.base_uri, item.methods, item.config)) for item in name_or_apis if name_or_apis?
+
+                else
+                    apptools.api[(name = name_or_apis)] = new RPCAPI(name, base_uri, methods, config)
+
+                return @
+
 
             # Assembles an RPC endpoint URL
             _assembleRPCURL: (method, api, prefix, base_uri) =>
@@ -346,6 +343,20 @@ class CoreRPCAPI extends CoreAPI
             fulfillRPCRequest: (config, request, callbacks, transport='xhr') =>
 
                 apptools.dev.verbose('RPC', 'Fulfill', config, request, callbacks)
+
+                if apptools.sys.libraries.resolve('jQuery') != false
+                    # Splice in our custom factory
+                    $.ajaxSetup(
+
+                        type: 'POST'
+                        accepts: 'application/json'
+                        contentType: 'application/json'
+                        global: true
+                        xhr: () =>
+                            return @internals.transports.xhr.factory()
+                        headers: @internals.config.headers
+
+                    )
 
                 @rpc.lastRequest = request
 
