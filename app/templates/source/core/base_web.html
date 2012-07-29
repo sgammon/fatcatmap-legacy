@@ -4,25 +4,29 @@
 
 <div id='main' class='fatcatmap-app fcm-light'>
 	{% block header %}
-		<header>
-			<div class='left'>
-				headerleft
-			</div>
+		<header><!-- app header -->
+			<div class='header-region left'>
+				{% block header_left %}
+					{% include "snippets/header_left.html" with context %}
+				{% endblock header_left %}
+			</div><!-- close .header-region.left -->
 
-			<div class='right'>
-				headerright
-			</div>
-		</header>
+			<div class='header-region right'>
+				{% block header_right %}
+					{% include "snippets/header_right.html" with context %}
+				{% endblock header_right %}
+			</div><!-- close .header-region.right -->
+		</header><!-- close header -->
 	{% endblock header %}
 
-	{% block mapper %}
+	{% block main %}
 		<div id='mapper'>
-			<b>MAPPER</b>
-		</div>
-	{% endblock mapper %}
+			{% block mapper %}{% endblock %}
+		</div><!-- close #mapper -->
+	{% endblock main %}
 
 	{% block frame %}
 	{% endblock frame %}
-</div>
+</div><!-- close #main -->
 
 {% endblock %}

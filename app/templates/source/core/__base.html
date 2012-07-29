@@ -86,6 +86,10 @@
 
 		{% endblock meta %}
 
+		{% block stylesheets %}
+		<link rel="stylesheet" media="screen" href="{{ asset.style('main', 'compiled') }}">
+		{% endblock stylesheets %}
+
 		{%- block prenorth -%}{%- endblock -%}
 		{% block postnorth %}{% endblock %}
 
@@ -98,7 +102,9 @@
 {% block body %}
 {% endblock body %}
 
+{% block presouth %}{% endblock presouth %}
 {% include "core/__south.html" %}
+{% block postsouth %}{% endblock postsouth %}
 </body>
 </html>
 {%- endblock _tpl_root -%}

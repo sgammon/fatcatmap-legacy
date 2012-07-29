@@ -3,16 +3,68 @@
 @import _core/h5bp
 @import _core/initializr
 
+// stupid modernizr
 math
 	display: none
 
+// small floaty classes
+.left
+	float: left
+
+.right
+	float: right
+
+// big main div that holds it all
 #main
 	position: fixed
 	top: 0
 	left: 0
 	bottom: 0
 	right: 0
+	background: #ddd
+	overflow: hidden
+
+// app header
+header
+	position: fixed
+	top: 0
+	left: 0
+	right: 0
+	height: 60px
+	overflow: hidden
 	background: #222
+
+	// left and right sections of the header
+	.header-region
+		width: 30%
+		height: 100%
+		line-height: 60px
+
+// mapper frame
+#mapper
+	position: fixed
+	top: 60px
+	left: 0
+	right: 0
+	bottom: 0
+	overflow: hidden
+	background: transparent
+
+#authbox
+	float: right
+	padding-left: 15px
+	padding-right: 15px
+
+	b
+		padding-right: 10px
+
+		a
+			text-decoration: none
+			color: white
+
+#fcmlogo
+	padding-left: 20px
+
 
 @import _core/helpers
 @import _core/mediaqueries

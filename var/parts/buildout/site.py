@@ -327,21 +327,13 @@ def addsitepackages(known_paths):
     base = os.path.dirname(base)
     base = os.path.dirname(base)
     base = os.path.dirname(base)
-    setuptools_path = 'c:\\python27\\lib\\site-packages'
+    setuptools_path = join(base, 'eggs/distribute-0.6.28-py2.7.egg')
     sys.path.append(setuptools_path)
     known_paths.add(os.path.normcase(setuptools_path))
     import pkg_resources
     buildout_paths = [
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages',
-        'c:\\python27\\lib\\site-packages'
+        join(base, 'eggs/distribute-0.6.28-py2.7.egg'),
+        join(base, 'eggs/zc.buildout-1.5.2-py2.7.egg')
         ]
     for path in buildout_paths:
         sitedir, sitedircase = makepath(path)
@@ -351,10 +343,12 @@ def addsitepackages(known_paths):
             pkg_resources.working_set.add_entry(sitedir)
     sys.__egginsert = len(buildout_paths) # Support distribute.
     original_paths = [
-        'C:\\Python27\\lib\\site-packages\\setuptools-0.6c11-py2.7.egg',
-        'C:\\Python27\\lib\\site-packages\\pip-1.1-py2.7.egg',
-        'C:\\Python27\\lib\\site-packages',
-        'C:\\Python27\\lib\\site-packages\\PIL'
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/unittest2-0.5.1-py2.7.egg',
+        '/Library/Python/2.7/site-packages/pip-1.1-py2.7.egg',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PIL',
+        '/Library/Python/2.7/site-packages'
         ]
     for path in original_paths:
         if path == setuptools_path or path not in known_paths:

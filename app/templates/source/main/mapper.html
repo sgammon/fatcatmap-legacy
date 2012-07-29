@@ -1,5 +1,13 @@
 {% extends "core/base_web.html" %}
 
-{% block main %}
-
+{% block mapper %}
+	{% include "snippets/mapper.html" with context %}
 {% endblock %}
+
+{% block postsouth %}
+<script>
+$(document).ready(function () {
+	window._buildGraph();
+});
+</script>
+{% endblock postsouth %}

@@ -1,0 +1,12 @@
+{% if util.api.users.get_current_user() is not none %}
+<div id='authbox'>
+	<div id='userbox' data-user-nickname='{{ util.api.users.get_current_user().nickname() }}'>
+		<b>Welcome back, {{ util.api.get_current_user().nickname() }}!</b>
+	</div>
+</div>
+{% else %}
+<div id='authbox'>
+	<b><a href='{{ link("auth/login") }}' title="log in!">log in!</a></b>
+	<b><a href='{{ link("about") }}'>about fatcatmap</a></b>
+</div>
+{% endif %}

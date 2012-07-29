@@ -340,13 +340,64 @@ math {
   display: none;
 }
 
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
 #main {
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
   right: 0;
+  background: #dddddd;
+  overflow: hidden;
+}
+
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  overflow: hidden;
   background: #222222;
+}
+header .header-region {
+  width: 30%;
+  height: 100%;
+  line-height: 60px;
+}
+
+#mapper {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+#authbox {
+  float: right;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+#authbox b {
+  padding-right: 10px;
+}
+#authbox b a {
+  text-decoration: none;
+  color: white;
+}
+
+#fcmlogo {
+  padding-left: 20px;
 }
 
 .ir {

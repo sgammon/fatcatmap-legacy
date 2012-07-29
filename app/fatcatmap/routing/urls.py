@@ -15,6 +15,7 @@ rules = [
 
         ## === Main URLs === ##
         Route('/', name='landing', handler='main.Landing'),
+        Route('/about', name='about', handler='main.About'),
         Route('/offline', name='offline', handler='main.Offline'),
 
         ## === Security URLs === ##
