@@ -1,5 +1,12 @@
-application: apptools-powered
-version: beta
+
+## production!
+#application: fat-cat-map
+#version: beta-101
+
+## staging!
+application: momentum-labs
+version: fatcatmap-beta-101
+
 runtime: python27
 api_version: 1
 threadsafe: yes
