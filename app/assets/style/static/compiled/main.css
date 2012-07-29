@@ -1,3 +1,105 @@
+@font-face {
+  font-family: "Karla";
+  font-style: italic;
+  font-weight: 400;
+  src: local("Karla Italic"), local("Karla-Italic"), url(https://themes.googleusercontent.com/static/fonts/karla/v1/oU7KPLtl1UkRu830svIOXw.woff) format("woff");
+}
+
+@font-face {
+  font-family: "Karla";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Karla Bold"), local("Karla-Bold"), url(https://themes.googleusercontent.com/static/fonts/karla/v1/3nZS3BKzlvhkwl4yjCQcjPesZW2xOQ-xsNqO47m55DA.woff) format("woff");
+}
+
+@font-face {
+  font-family: "Karla";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Karla"), local("Karla-Regular"), url(https://themes.googleusercontent.com/static/fonts/karla/v1/azR40LUJrT4HaWK28zHmVA.woff) format("woff");
+}
+
+@font-face {
+  font-family: "Cabin";
+  font-style: normal;
+  font-weight: 500;
+  src: local("Cabin Medium"), local("Cabin-Medium"), url("http://cdn.static.labs.stonerhub.com/ext/static/fonts/cabin-medium.woff") format("woff");
+}
+
+@font-face {
+  font-family: "Maven Pro";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Maven Pro Bold"), local("MavenProBold"), url("http://cdn.static.stonerhub.com/ext/static/fonts/maven-pro.woff") format("woff");
+}
+
+@font-face {
+  font-family: "zocial";
+  font-style: normal;
+  font-weight: normal;
+  src: url("/assets/ext/static/fonts/zocial-regular-webfont.eot");
+  src: url("/assets/ext/static/fonts/zocial-regular-webfont.eot?#iefix") format("embedded-opentype"), url("/assets/ext/static/fonts/zocial-regular-webfont.woff") format("woff"), url("/assets/ext/static/fonts/zocial-regular-webfont.ttf") format("truetype"), url("/assets/ext/static/fonts/zocial-regular-webfont.svg#ZocialRegular") format("svg");
+  unicode-range: U+0 -U10FFFF;
+}
+
+@font-face {
+  font-family: "momentron";
+  src: url("/assets/ext/static/fonts/icons-momentum.svg") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "XMS";
+  src: url("/assets/ext/static/fonts/icons-xms.svg") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.momentron {
+  font-family: "momentron";
+  font-size: 20px;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.XMS {
+  font-family: "XMS";
+  font-size: 16px;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.icon16 {
+  font-size: 16px !important;
+}
+
+.icon20 {
+  font-size: 20px !important;
+}
+
+.icon24 {
+  font-size: 24px !important;
+}
+
+.icon32 {
+  font-size: 32px !important;
+}
+
+.icon64 {
+  font-size: 64px !important;
+}
+
+.icon128 {
+  font-size: 128px !important;
+}
+
+.icon256 {
+  font-size: 256px !important;
+}
+
 article, aside, details, figcaption, figure, footer, header, hgroup, nav, section {
   display: block;
 }
@@ -320,9 +422,6 @@ nav a:hover {
 /* ==============
  *  MOBILE: Main
  * ============== */
-#main {
-  padding: 30px 0;
-}
 #main article h1 {
   font-size: 2em;
 }
@@ -336,16 +435,56 @@ nav a:hover {
   padding: 20px 0;
 }
 
+* {
+  font-family: "Karla";
+  font-size: 11pt;
+  text-transform: lowercase;
+}
+
 math {
   display: none;
 }
 
 .left {
   float: left;
+  text-align: left;
 }
 
 .right {
   float: right;
+  text-align: right;
+}
+
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  overflow: hidden;
+  background: #222222;
+  border-bottom: 2px solid #111111;
+  z-index: 1000;
+}
+header .header-region {
+  width: 30%;
+  height: 100%;
+  line-height: 60px;
+}
+header .header-region #fcmlogo {
+  padding-left: 20px;
+}
+header .header-region #authbox {
+  float: right;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+header .header-region #authbox b {
+  padding-right: 10px;
+}
+header .header-region #authbox b a {
+  text-decoration: none;
+  color: white;
 }
 
 #main {
@@ -356,48 +495,73 @@ math {
   right: 0;
   background: #dddddd;
   overflow: hidden;
+  z-index: 500;
 }
-
-header {
+#main #stage {
   position: fixed;
-  top: 0;
+  top: 60px;
+  bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
   overflow: hidden;
-  background: #222222;
+  z-index: 600;
 }
-header .header-region {
-  width: 30%;
+#main #stage #mapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+}
+#main #stage #mapper:before {
+  background: -webkit-gradient(linear, 100% 50%, 50% 0%, color-stop(100%, #cdcdcd), color-stop(100%, #dddddd));
+  background: -webkit-linear-gradient(top, #cdcdcd, #dddddd);
+  background: -moz-linear-gradient(top, #cdcdcd, #dddddd);
+  background: -o-linear-gradient(top, #cdcdcd, #dddddd);
+  background: -ms-linear-gradient(top, #cdcdcd, #dddddd);
+  background: linear-gradient(top, #cdcdcd, #dddddd);
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 60px;
+  height: 80px;
+  width: 100%;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  padding-left: 20px;
+  padding-right: 20px;
+  z-index: 1000;
+}
+footer .footer-region {
+  width: 40%;
   height: 100%;
   line-height: 60px;
 }
-
-#mapper {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  background: transparent;
+footer .footer-region #dev_warning {
+  color: #888888;
 }
-
-#authbox {
-  float: right;
-  padding-left: 15px;
-  padding-right: 15px;
+footer .footer-region #dev_warning b {
+  text-transform: uppercase !important;
 }
-#authbox b {
-  padding-right: 10px;
-}
-#authbox b a {
+footer .footer-region #dev_warning a {
   text-decoration: none;
-  color: white;
+  color: #333333 !important;
 }
-
-#fcmlogo {
-  padding-left: 20px;
+footer .footer-region #dev_warning a:hover {
+  color: #666666 !important;
+}
+footer .footer-region #dev_warning a:visited {
+  color: #333333;
+}
+footer .footer-region #dev_warning a:active {
+  text-decoration: underline;
+  color: #333333;
 }
 
 .ir {

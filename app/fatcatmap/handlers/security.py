@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from project.handlers import WebHandler
+from fatcatmap.handlers import WebHandler
 
 
 class Login(WebHandler):

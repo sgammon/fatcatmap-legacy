@@ -1,0 +1,13 @@
+{% extends "core/base_web.html" %}
+
+{% block main %}
+<div id='stage' class='fixed app'>
+	{% block stage %}
+	{% endblock stage %}
+
+	<div id='panes'>
+		{% block frame %}
+		{% endblock frame %}
+	</div><!-- end #panes -->
+</div><!-- end #stage -->'
+{% endblock main %}

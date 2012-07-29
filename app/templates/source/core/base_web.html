@@ -2,6 +2,16 @@
 
 {% block body %}
 
+<!-- App DOM Resources -->
+<div id='resources' class='hidden resource root'>
+
+	<div id='templates' class='hidden template root'>
+
+	</div><!-- end #templates -->
+
+</div><!-- end #resources -->
+
+<!-- App Container -->
 <div id='main' class='fatcatmap-app fcm-light'>
 	{% block header %}
 		<header><!-- app header -->
@@ -20,13 +30,23 @@
 	{% endblock header %}
 
 	{% block main %}
-		<div id='mapper'>
-			{% block mapper %}{% endblock %}
-		</div><!-- close #mapper -->
 	{% endblock main %}
 
-	{% block frame %}
-	{% endblock frame %}
+	{% block footer %}
+		<footer><!-- app footer -->
+			<div class='footer-region left'>
+				{% block footer_left %}
+					{% include "snippets/footer_left.html" with context %}
+				{% endblock footer_left %}
+			</div><!-- close .footer-region.left -->
+
+			<div class='footer-region right'>
+				{% block footer_right %}
+					{% include "snippets/footer_right.html" with context %}
+				{% endblock footer_right %}
+			</div><!-- close .footer-region.right -->
+		</footer><!-- end footer -->
+	{% endblock footer %}
 </div><!-- close #main -->
 
 {% endblock %}

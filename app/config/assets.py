@@ -116,7 +116,7 @@ config['apptools.project.assets'] = {
             },
 
             'assets': {
-                'main': {'version': 0.1}  # reset, main, layout, forms
+                'main': {'version': 0.2}  # reset, main, layout, forms
             }
 
         },

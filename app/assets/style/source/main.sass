@@ -1,7 +1,13 @@
 @import "compass/utilities/sprites/sprite-img"
+@import _core/fonts
 @import _core/config
 @import _core/h5bp
 @import _core/initializr
+
+*
+	font-family: 'Karla'
+	font-size: 11pt
+	text-transform: lowercase
 
 // stupid modernizr
 math
@@ -10,9 +16,45 @@ math
 // small floaty classes
 .left
 	float: left
+	text-align: left
 
 .right
 	float: right
+	text-align: right
+
+// app header
+header
+	position: fixed
+	top: 0
+	left: 0
+	right: 0
+	height: 58px
+	overflow: hidden
+	background: #222
+	border-bottom: 2px solid #111
+	z-index: 1000
+
+	// left and right sections of the header
+	.header-region
+		width: 30%
+		height: 100%
+		line-height: 60px
+
+		#fcmlogo
+			padding-left: 20px
+
+		#authbox
+			float: right
+			padding-left: 15px
+			padding-right: 15px
+
+			b
+				padding-right: 10px
+
+				a
+					text-decoration: none
+					color: white
+
 
 // big main div that holds it all
 #main
@@ -23,48 +65,71 @@ math
 	right: 0
 	background: #ddd
 	overflow: hidden
+	z-index: 500
 
-// app header
-header
+	#stage
+		position: fixed
+		top: 60px
+		bottom: 0
+		left: 0
+		right: 0
+		overflow: hidden
+		z-index: 600
+
+		// mapper frame
+		#mapper
+			position: relative
+			height: 100%
+			width: 100%
+			background: transparent
+
+			&:before
+				background: -webkit-gradient(linear, 100% 50%, 50% 0%, color-stop(100%, #cdcdcd), color-stop(100%, #ddd))
+				background: -webkit-linear-gradient(top, #cdcdcd, #ddd)
+				background: -moz-linear-gradient(top, #cdcdcd, #ddd)
+				background: -o-linear-gradient(top, #cdcdcd, #ddd)
+				background: -ms-linear-gradient(top, #cdcdcd, #ddd)
+				background: linear-gradient(top, #cdcdcd, #ddd)
+				content: ''
+				position: fixed
+				left: 0
+				right: 0
+				top: 60px
+				height: 80px
+				width: 100%
+
+
+footer
 	position: fixed
-	top: 0
+	bottom: 0
 	left: 0
 	right: 0
-	height: 60px
-	overflow: hidden
-	background: #222
+	height: 70px
+	padding-left: 20px
+	padding-right: 20px
+	z-index: 1000
 
-	// left and right sections of the header
-	.header-region
-		width: 30%
+	.footer-region
+		width: 40%
 		height: 100%
 		line-height: 60px
 
-// mapper frame
-#mapper
-	position: fixed
-	top: 60px
-	left: 0
-	right: 0
-	bottom: 0
-	overflow: hidden
-	background: transparent
+		#dev_warning
+			color: #888
+			b
+				text-transform: uppercase !important
+			a
+				text-decoration: none
+				color: #333 !important
 
-#authbox
-	float: right
-	padding-left: 15px
-	padding-right: 15px
+				&:hover
+					color: #666 !important
 
-	b
-		padding-right: 10px
+				&:visited
+					color: #333
 
-		a
-			text-decoration: none
-			color: white
-
-#fcmlogo
-	padding-left: 20px
-
+				&:active
+					color: #AAA
 
 @import _core/helpers
 @import _core/mediaqueries
