@@ -42,24 +42,10 @@ def run(environment):
         if 0: yield None
         yield u'Welcome to AppTools!'
 
-    def block_mobile(context, environment=environment):
-        l_util = context.resolve('util')
-        l_page = context.resolve('page')
-        l_asset = context.resolve('asset')
-        if 0: yield None
-        if (environment.getattr(l_page, 'ios') or environment.getattr(environment.getattr(l_util, 'config'), 'debug')):
-            if 0: yield None
-            yield u'\n\t\t<!-- Mobile/Extras -->\n\t\t<meta name="MobileOptimized" content="320">\n\t\t<meta name="HandheldFriendly" content="True">\n\t\t<meta name="apple-mobile-web-app-capable" content="yes">\n\t\t<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />\n\n\t\t<link rel="apple-touch-icon" href="%s" />\n\t\t<link rel="apple-touch-startup-image" href="%s" />\n\t\t<link rel="apple-touch-icon-precomposed" href="%s">\n\t\t<link rel="apple-touch-icon-precomposed" sizes="114x114" href="%s">\n\t\t' % (
-                context.call(environment.getattr(l_asset, 'image'), 'mobile/ios', 'touch-icon.png'), 
-                context.call(environment.getattr(l_asset, 'image'), 'mobile/ios', 'iphone-splash.png'), 
-                context.call(environment.getattr(l_asset, 'image'), 'mobile/ios', 'touch-icon-precomposed.png'), 
-                context.call(environment.getattr(l_asset, 'image'), 'mobile/ios', 'apple-touch-icon.png'), 
-            )
-
     def block_opengraph(context, environment=environment):
         l_page = context.resolve('page')
         if 0: yield None
-        yield u'\n\t\t<!-- OpenGraph -->\n\t\t<meta property="og:title" content="" />\n\t\t<meta property="og:type" content="website" />\n\t\t<meta property="og:determiner" content="" />\n\t\t<meta propert="og:locale" content="en_US" />\n\t\t<meta property="og:url" content="%s" />\n\t\t<meta property="og:description" content="" />\n\t\t<meta property="og:image" content="" />\n\t\t<meta property="og:image:width" content="298" />\n\t\t<meta property="og:image:height" content="298" />\n\t\t<meta property="og:site_name" content="" />\n\t\t<meta property="fb:app_id" content="" />\n\n\t\t<!-- Location/Geo -->\n\t\t<meta property="og:latitude" content="">\n\t\t<meta property="og:longitude" content="">\n\t\t<meta property="og:street-address" content="">\n\t\t<meta property="og:locality" content="">\n\t\t<meta property="og:region" content="">\n\t\t<meta property="og:postal-code" content="">\n\t\t<meta property="og:country-name" content="">\n\t\t<meta property="og:email" content="">\n\t\t<meta property="og:phone_number" content="">\n\t\t' % (
+        yield u'\n\t\t<!-- OpenGraph -->\n\t\t<meta property="og:title" content="fatcatmap labs" />\n\t\t<meta property="og:type" content="website" />\n\t\t<meta property="og:determiner" content="a" />\n\t\t<meta propert="og:locale" content="en_US" />\n\t\t<meta property="og:url" content="%s" />\n\t\t<meta property="og:description" content="fatcatmap makes politics simple, by visualizing political data in a way that makes sense to browse and interact with like never before. spot corruption in realtime as bills, contributions, politicians and lobbyists are plotted on the same map." />\n\t\t<meta property="og:image" content="http://cdn.fatcatmap.com/branding/precomposed-large.png" />\n\t\t<meta property="og:image:width" content="193" />\n\t\t<meta property="og:image:height" content="193" />\n\t\t<meta property="og:site_name" content="fatcatmap labs" />\n\t\t<meta property="fb:app_id" content="" />\n\n\t\t<!-- Location/Geo -->\n\t\t<meta property="og:latitude" content="">\n\t\t<meta property="og:longitude" content="">\n\t\t<meta property="og:street-address" content="">\n\t\t<meta property="og:locality" content="">\n\t\t<meta property="og:region" content="">\n\t\t<meta property="og:postal-code" content="">\n\t\t<meta property="og:country-name" content="">\n\t\t<meta property="og:email" content="">\n\t\t<meta property="og:phone_number" content="">\n\t\t' % (
             environment.getattr(l_page, 'url'), 
         )
 
@@ -73,13 +59,11 @@ def run(environment):
             yield u'\n\t\t<meta http-equiv="Set-Cookie" content="%s">\n\t\t' % (
                 environment.getattr(l_page, 'cookies'), 
             )
-        yield u'\n\n\t\t<!-- Info -->\n\t\t<meta name="author" content="">\n\t\t<meta name="publisher" content="">\n\t\t<meta name="keywords" content="">\n\t\t<meta name="copyright" content="">\n\t\t<meta name="description" content="">\n\t\t<meta name="application-name" content="AppTools">\n\t\t<meta name="google-site-verification" content="" />\n\t\t<meta name="robots" content="index, follow">\n\t\t<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes,height=device-height">\n\t\t<meta name="revisit-after" content="7 days">\n\t\t<!-- keyword,keyword,keyword -->\n\n\t\t'
+        yield u'\n\n\t\t<!-- Info -->\n\t\t<meta name="author" content="Sam Gammon <sam@momentum.io>, David Rekow <david@momentum.io>">\n\t\t<meta name="publisher" content="momentum labs">\n\t\t<meta name="keywords" content="politics,transparency,opendata,data,influence,corruption,sunlight,government,civics">\n\t\t<meta name="copyright" content="momentum labs (c) 2012, all rights reserved">\n\t\t<meta name="description" content="fatcatmap makes politics simple, by visualizing political data in a way that makes sense to browse and interact with like never before. spot corruption in realtime as bills, contributions, politicians and lobbyists are plotted on the same map.">\n\t\t<meta name="application-name" content="fatcatmap labs">\n\t\t<meta name="google-site-verification" content="iZQYpLaxhg19Zp3ehhe63R6YIvnpjXv_IGtuGYZai54" />\n\t\t<meta name="robots" content="index, follow">\n\t\t<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes,height=device-height">\n\t\t<meta name="revisit-after" content="7 days">\n\t\t<!-- government,opendata,politics -->\n\n\t\t'
         for event in context.blocks['opengraph'][0](context):
             yield event
-        for event in context.blocks['mobile'][0](context):
-            yield event
-        yield u'<link rel="icon" href="/favicon.ico" type="image/x-icon">\n\t\t<link rel="logo" href="%s">\n\t\t<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">\n\n\t\t' % (
-            context.call(environment.getattr(l_asset, 'image'), 'branding', 'logo.svg'), 
+        yield u'\n\n\t\t<!-- Mobile/Extras -->\n\t\t<meta name="MobileOptimized" content="320">\n\t\t<meta name="HandheldFriendly" content="True">\n\t\t<meta name="apple-mobile-web-app-capable" content="yes">\n\t\t<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />\n\n\t\t<link rel="apple-touch-icon" href="http://cdn.fatcatmap.com/branding/precomposed-48x48.png" />\n\t\t<link rel="apple-touch-startup-image" href="%s" />\n\t\t<link rel="apple-touch-icon-precomposed" href="http://cdn.fatcatmap.com/branding/precomposed-48x48.png">\n\t\t<link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://cdn.fatcatmap.com/branding/precomposed-114x114.png">\n\n\t\t<link rel="icon" href="/assets/img/static/catheads/noncomposed-16x16.png" type="image/png">\n\t\t<link rel="logo" href="http://cdn.fatcatmap.com/branding/fatcatmap-alpha-v1-large.png">\n\t\t<link rel="shortcut icon" href="/assets/img/static/catheads/noncomposed-16x16.png" type="image/png">\n\n\t\t' % (
+            context.call(environment.getattr(l_asset, 'image'), 'mobile/ios', 'iphone-splash.png'), 
         )
 
     def block__tpl_root(context, environment=environment):
@@ -113,6 +97,6 @@ def run(environment):
     def block_postnorth(context, environment=environment):
         if 0: yield None
 
-    blocks = {'prenorth': block_prenorth, 'body': block_body, 'head': block_head, 'north': block_north, 'title': block_title, 'mobile': block_mobile, 'opengraph': block_opengraph, 'meta': block_meta, '_tpl_root': block__tpl_root, 'postnorth': block_postnorth}
-    debug_info = '2=9&93=12&105=15&20=19&21=22&93=24&94=26&97=28&99=31&94=35&95=37&99=41&72=45&73=50&80=53&81=54&82=55&83=56&46=59&52=63&21=66&29=71&30=74&46=77&72=79&88=82&2=85&3=88&11=94&12=95&13=96&14=97&15=98&16=99&20=102&105=105&108=108&97=113'
+    blocks = {'prenorth': block_prenorth, 'body': block_body, 'head': block_head, 'north': block_north, 'title': block_title, 'opengraph': block_opengraph, 'meta': block_meta, '_tpl_root': block__tpl_root, 'postnorth': block_postnorth}
+    debug_info = '2=9&89=12&101=15&20=19&21=22&89=24&90=26&93=28&95=31&90=35&91=37&95=41&46=45&52=49&21=52&29=57&30=60&46=63&79=66&2=69&3=72&11=78&12=79&13=80&14=81&15=82&16=83&20=86&101=89&104=92&93=97'
     return locals()
