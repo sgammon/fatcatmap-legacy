@@ -2,7 +2,7 @@
 from google.appengine.api import xmpp
 
 from fatcatmap.models.transport import xmpp as models
-from fatcatmap.pipelines.primitive import TransportPipeline
+from fatcatmap.pipelines.primitive.transport import TransportPipeline
 
 
 ## XMPPPipeline - parent to all XMPP API-related pipelines

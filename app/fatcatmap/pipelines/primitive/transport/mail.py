@@ -4,7 +4,7 @@ from google.appengine.ext import ndb
 from google.appengine.api import mail
 
 from fatcatmap.models.transport import mail as models
-from fatcatmap.pipelines.primitive import TransportPipeline
+from fatcatmap.pipelines.primitive.transport import TransportPipeline
 
 
 ## MailPipeline - abstract parent for all Mail API-related pipelines

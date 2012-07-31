@@ -4,7 +4,7 @@ import datetime
 
 from google.appengine.api import channel
 from fatcatmap.models.transport import channel as models
-from fatcatmap.pipelines.primitive import TransportPipeline
+from fatcatmap.pipelines.primitive.transport import TransportPipeline
 
 
 ## ChannelPipeline - parent to all Channel API-related pipelines
