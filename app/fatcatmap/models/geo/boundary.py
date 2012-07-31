@@ -17,6 +17,7 @@ class State(Model):
 	fullname = ndb.StringProperty(indexed=True)
 	shortname = ndb.StringProperty(indexed=True)
 	names = ndb.StringProperty(repeated=True, indexed=True)
+	nation = ndb.KeyProperty()
 
 
 class City(Model):
@@ -27,3 +28,13 @@ class City(Model):
 	shortname = ndb.StringProperty(indexed=True)
 	names = ndb.StringProperty(repeated=True, indexed=True)
 	latlong = ndb.GeoPtProperty(indexed=True)
+	state = ndb.KeyProperty()
+
+
+class PostalCode(Model):
+
+	''' Represents an area for postal delivery. '''
+
+	code = ndb.StringProperty()
+	neighbors = ndb.KeyProperty(repeated=True)
+	cities = ndb.KeyProperty()
