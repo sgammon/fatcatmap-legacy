@@ -9,7 +9,7 @@ config['fatcatmap.data.providers'] = {
 config['fatcatmap.data.providers.Freebase'] = {
 
 	'enabled': False,
-	'apikey': ''
+	'apikey': 'AIzaSyB-kYEeJj8pYqNdHI6nEbgGNaDP_xTTVsQ'
 
 }
 

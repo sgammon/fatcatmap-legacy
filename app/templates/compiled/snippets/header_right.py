@@ -18,7 +18,7 @@ def run(environment):
             )
         else:
             if 0: yield None
-            yield u'\n<div id=\'authbox\'>\n\t<b><a href=\'%s\' title="log in!">log in!</a></b>\n\t<b><a href=\'%s\'>about fatcatmap</a></b>\n</div>\n' % (
+            yield u'\n<div id=\'authbox\'>\n\t<b><a href=\'%s\' title="log in!">log in!</a></b>\n\t<b><a href=\'%s\'>about</a></b>\n</div>\n' % (
                 context.call(l_link, 'auth/login'), 
                 context.call(l_link, 'about'), 
             )
