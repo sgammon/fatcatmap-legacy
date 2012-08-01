@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-# Copyright 2010 Google Inc.
+# Copyright 2012 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,15 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-try:
-  from pipeline import *
-except ImportError, e:
-  import logging
-  logging.warning(
-      'Could not load Pipeline API. Will fix path for testing. %s: %s',
-      e.__class__.__name__, str(e))
-  import testutil
-  testutil.fix_path()
-  del logging
-  from pipeline import *
+
+# Add these indexes to your app to get a functional root status UI.
+indexes:
+
+- kind: _AE_Pipeline_Record
+  properties:
+  - name: is_root_pipeline
+  - name: start_time
+    direction: desc
+
+- kind: _AE_Pipeline_Record
+  properties:
+  - name: class_path
+  - name: start_time
+    direction: desc
