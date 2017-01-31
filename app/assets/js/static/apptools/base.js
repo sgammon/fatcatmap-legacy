@@ -1,9 +1,11 @@
 (function() {
-  var AppException, AppTools, AppToolsCollection, AppToolsException, AppToolsModel, AppToolsRouter, AppToolsView, CoreAPI, CoreAgentAPI, CoreDevAPI, CoreDispatchAPI, CoreEventsAPI, CoreException, CoreInterface, CoreModelAPI, CoreObject, CorePushAPI, CoreRPCAPI, CoreRenderAPI, CoreStorageAPI, CoreUserAPI, CoreWidget, CoreWidgetAPI, Expand, Find, Milk, Parse, PushDriver, QueryDriver, RPCAPI, RPCDriver, RPCRequest, RPCResponse, RenderDriver, StorageDriver, TemplateCache,
+  var AppException, AppTools, AppToolsCollection, AppToolsException, AppToolsModel, AppToolsRouter, AppToolsView, CoreAPI, CoreAgentAPI, CoreDevAPI, CoreDispatchAPI, CoreEventsAPI, CoreException, CoreInterface, CoreModelAPI, CoreObject, CorePushAPI, CoreRPCAPI, CoreRenderAPI, CoreStorageAPI, CoreUserAPI, Expand, Find, IndexedDBDriver, IndexedDBEngine, KeyEncoder, LocalStorageDriver, LocalStorageEngine, Milk, Model, ModelException, Parse, PushDriver, QueryDriver, RPCAPI, RPCDriver, RPCRequest, RPCResponse, RenderDriver, SessionStorageDriver, SessionStorageEngine, SimpleKeyEncoder, StorageAdapter, StorageDriver, Template, TemplateCache, Util, WebSQLDriver, WebSQLEngine, _simple_key_encoder,
     __slice = Array.prototype.slice,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; },
-    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
+    _this = this;
 
   this.__apptools_preinit = {};
 
@@ -443,6 +445,528 @@
 
   this.__apptools_preinit.abstract_base_classes.push(AppToolsCollection);
 
+  Util = (function() {
+    var _this = this;
+
+    Util.mount = 'util';
+
+    Util.events = [];
+
+    Util.prototype.is = function(thing) {
+      return !this.in_array(thing, [false, null, NaN, void 0, 0, {}, [], '', 'false', 'False', 'null', 'NaN', 'undefined', '0', 'none', 'None']);
+    };
+
+    Util.prototype.is_function = function(object) {
+      return typeof object === 'function';
+    };
+
+    Util.prototype.is_object = function(object) {
+      return typeof object === 'object';
+    };
+
+    Util.prototype.is_raw_object = function(object) {
+      if (!object || typeof object !== 'object' || object.nodeType || (typeof object === 'object' && __indexOf.call(object, 'setInterval') >= 0)) {
+        return false;
+      }
+      if ((object.constructor != null) && !object.hasOwnProperty('constructor') && !object.constructor.prototype.hasOwnProperty('isPrototypeOf')) {
+        return false;
+      }
+      return true;
+    };
+
+    Util.prototype.is_empty_object = function(object) {
+      var key;
+      for (key in object) {
+        return false;
+      }
+      return true;
+    };
+
+    Util.prototype.is_body = function(object) {
+      return this.is_object(object) && (Object.prototype.toString.call(object) === '[object HTMLBodyElement]' || object.constructor.name === 'HTMLBodyElement');
+    };
+
+    Util.prototype.is_array = Array.isArray || function(object) {
+      return typeof object === 'array' || Object.prototype.toString.call(object) === '[object Array]' || object.constructor.name === 'Array';
+    };
+
+    Util.prototype.in_array = function(item, array) {
+      var it, matches, _fn, _i, _len,
+        _this = this;
+      if (array.indexOf != null) return !!~array.indexOf(item);
+      matches = [];
+      _fn = function(it) {
+        if (it === item) return matches.push(it);
+      };
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        it = array[_i];
+        _fn(it);
+      }
+      return matches.length > 0;
+    };
+
+    Util.prototype.to_array = function(node_or_token_list) {
+      var array;
+      array = [];
+      for (i = node_or_token_list.length; i--; array.unshift(node_or_token_list[i]));
+      return array;
+    };
+
+    Util.prototype.filter = function(array, condition) {
+      var item, new_array, _i, _len;
+      new_array = [];
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        item = array[_i];
+        if (condition(item)) new_array.push(item);
+      }
+      return new_array;
+    };
+
+    Util.prototype.sort = null;
+
+    Util.prototype.create_element_string = function(tag, attrs, separator, ext) {
+      var el_str, k, no_close, v;
+      if (separator == null) separator = '*';
+      no_close = ['area', 'base', 'basefont', 'br', 'col', 'frame', 'hr', 'img', 'input', 'link'];
+      tag = tag.toLowerCase();
+      el_str = '<' + tag;
+      for (k in attrs) {
+        v = attrs[k];
+        el_str += ' ' + k + '="' + v + '"';
+      }
+      if (ext != null) el_str += ' ' + ext;
+      el_str += '>';
+      if (!this.in_array(tag, no_close)) el_str += separator + '</' + tag + '>';
+      return el_str;
+    };
+
+    Util.prototype.create_doc_frag = function(html_string) {
+      var frag, range;
+      range = document.createRange();
+      range.selectNode(document.getElementsByTagName('div').item(0));
+      frag = range.createContextualFragment(html_string);
+      return frag;
+    };
+
+    Util.prototype.add = function(element_type, attrs, parent_node) {
+      var node_id, q_name,
+        _this = this;
+      if (!(element_type != null) || !this.is_object(attrs)) return false;
+      q_name = this.is_body(parent_node) || !(parent_node != null) || !(node_id = parent_node.getAttribute('id')) ? 'dom' : node_id;
+      if (!(this._state.queues[q_name] != null)) this.internal.queues.add(q_name);
+      this._state.queues[q_name].push([element_type, attrs]);
+      return this.internal.queues.go(q_name, function(response) {
+        var args, dfrag, html, parent, q, _i, _len;
+        q = response.queue;
+        parent = response.name === 'dom' ? document.body : _this.get(response.name);
+        html = [];
+        for (_i = 0, _len = q.length; _i < _len; _i++) {
+          args = q[_i];
+          html.push(_this.create_element_string.apply(_this, args));
+        }
+        dfrag = _this.create_doc_frag(html.join(''));
+        return parent.appendChild(dfrag);
+      });
+    };
+
+    Util.prototype.remove = function(node) {
+      return node.parentNode.removeChild(node);
+    };
+
+    Util.prototype.get = function(query, node) {
+      var cls, id, tg;
+      if (node == null) node = document;
+      if (!(query != null)) return null;
+      if (query.nodeType) return query;
+      if ((id = document.getElementById(query)) != null) {
+        return id;
+      } else {
+        if ((cls = node.getElementsByClassName(query)).length > 0) {
+          return this.to_array(cls);
+        } else {
+          if ((tg = node.getElementsByTagName(query)).length > 0) {
+            return this.to_array(tg);
+          } else {
+            return null;
+          }
+        }
+      }
+    };
+
+    Util.prototype.get_offset = function(elem) {
+      var offL, offT;
+      offL = offT = 0;
+      while (true) {
+        offL += elem.offsetLeft;
+        offT += elem.offsetTop;
+        if (!(elem = elem.offsetParent)) break;
+      }
+      return {
+        left: offL,
+        top: offT
+      };
+    };
+
+    Util.prototype.has_class = function(element, cls) {
+      var _ref;
+      return ((_ref = element.classList) != null ? typeof _ref.contains === "function" ? _ref.contains(cls) : void 0 : void 0) || element.className && new RegExp('\\s*' + cls + '\\s*').test(element.className);
+    };
+
+    Util.prototype.is_id = function(str) {
+      if (str.charAt(0) === '#') return true;
+      if (document.getElementById(str) !== null) return true;
+      return false;
+    };
+
+    Util.prototype.bind = function(element, event, fn, prop) {
+      var el, ev, evt, func, _i, _j, _len, _len2;
+      if (prop == null) prop = false;
+      if (!(element != null)) return false;
+      if (this.is_array(element)) {
+        for (_i = 0, _len = element.length; _i < _len; _i++) {
+          el = element[_i];
+          this.bind(el, event, fn, prop);
+        }
+      } else if (this.is_array(event)) {
+        for (_j = 0, _len2 = event.length; _j < _len2; _j++) {
+          evt = event[_j];
+          this.bind(element, evt, fn, prop);
+        }
+      } else if (this.is_raw_object(event)) {
+        for (ev in event) {
+          func = event[ev];
+          this.bind(element, ev, func, prop);
+        }
+      } else {
+        return element.addEventListener(event, fn, prop);
+      }
+    };
+
+    Util.prototype.unbind = function(element, event) {
+      var el, ev, _i, _j, _len, _len2;
+      if (!(element != null)) return false;
+      if (this.is_array(element)) {
+        for (_i = 0, _len = element.length; _i < _len; _i++) {
+          el = element[_i];
+          this.unbind(el, event);
+        }
+      } else if (this.is_array(event)) {
+        for (_j = 0, _len2 = event.length; _j < _len2; _j++) {
+          ev = event[_j];
+          this.unbind(element, ev);
+        }
+      } else if (this.is_raw_object(element)) {
+        for (el in element) {
+          ev = element[el];
+          this.unbind(el, ev);
+        }
+      } else if (element.constructor.name === 'NodeList') {
+        return this.unbind(this.to_array(element), event);
+      } else {
+        return element.removeEventListener(event);
+      }
+    };
+
+    Util.prototype.block = function(async_method, object) {
+      var result, _done;
+      if (object == null) object = {};
+      console.log('[Util] Enforcing blocking at user request... :(');
+      _done = false;
+      result = null;
+      async_method(object, function(x) {
+        result = x;
+        return _done = true;
+      });
+      while (true) {
+        if (_done !== false) break;
+      }
+      return result;
+    };
+
+    Util.prototype.now = function() {
+      return +new Date();
+    };
+
+    Util.prototype.timestamp = function(d) {
+      if (d == null) d = new Date();
+      return [[d.getMonth() + 1, d.getDate(), d.getFullYear()].join('-'), [d.getHours(), d.getMinutes(), d.getSeconds()].join(':')].join(' ');
+    };
+
+    Util.prototype.prep_animation = function(t, e, c) {
+      var options;
+      options = !(t != null) ? {
+        duration: 400
+      } : ((t != null) && this.is_object(t) ? this.extend({}, t) : {
+        complete: c || (!c && e) || (is_function(t && t)),
+        duration: t,
+        easing: (c && e) || (e && !is_function(e))
+      });
+      return options;
+    };
+
+    Util.prototype.throttle = function(fn, buffer, prefire) {
+      var last, timer_id,
+        _this = this;
+      timer_id = null;
+      last = 0;
+      return function() {
+        var args, clear, elapsed, go;
+        args = arguments;
+        elapsed = _this.now() - last;
+        clear = function() {
+          go();
+          return timer_id = null;
+        };
+        go = function() {
+          last = _this.now();
+          return fn.apply(_this, args);
+        };
+        if (prefire && !timer_id) go();
+        if (!!timer_id) clearTimeout(timer_id);
+        if (!(prefire != null) && elapsed >= buffer) {
+          return go();
+        } else {
+          return timer_id = setTimeout((prefire ? clear : go), !(prefire != null) ? buffer - elapsed : buffer);
+        }
+      };
+    };
+
+    Util.prototype.debounce = function(fn, buffer, prefire) {
+      if (buffer == null) buffer = 200;
+      if (prefire == null) prefire = false;
+      return this.throttle(fn, buffer, prefire);
+    };
+
+    Util.prototype.currency = function(num) {
+      var char, index, len, new_nums, nums, process, _len,
+        _this = this;
+      len = (nums = String(num).split('').reverse()).length;
+      new_nums = [];
+      process = function(c, i) {
+        var sym;
+        if ((i + 1) % 3 === 0 && len - i > 1) {
+          sym = ',';
+        } else if (i === len - 1) {
+          sym = '$';
+        } else {
+          sym = '';
+        }
+        return new_nums.unshift(sym + c);
+      };
+      for (index = 0, _len = nums.length; index < _len; index++) {
+        char = nums[index];
+        process(char, index);
+      }
+      return new_nums.join('');
+    };
+
+    Util.prototype.extend = function() {
+      var arg, args, deep, i, len, target, _fn, _i, _len,
+        _this = this;
+      target = arguments[0] || {};
+      i = 1;
+      deep = false;
+      len = arguments.length;
+      if (typeof target === 'boolean') {
+        deep = target;
+        target = arguments[1] || {};
+        i++;
+      }
+      if (!this.is_object(target) && !this.is_function(target)) target = {};
+      args = Array.prototype.slice.call(arguments, i);
+      _fn = function(arg) {
+        var a, clone, copied_src, o, option, options, src, value, _results;
+        options = arg;
+        _results = [];
+        for (option in options) {
+          if (!__hasProp.call(options, option)) continue;
+          value = options[option];
+          if (target === value) continue;
+          o = String(option);
+          clone = value;
+          src = target[option];
+          if (deep && (clone != null) && (_this.is_raw_object(clone) || (a = _this.is_array(clone)))) {
+            if (a != null) {
+              a = false;
+              copied_src = src && (_this.is_array(src) ? src : []);
+            } else {
+              copied_src = src && (_this.is_raw_object(src) ? src : {});
+            }
+            _results.push(target[option] = _this.extend(deep, copied_src, clone));
+          } else if (clone != null) {
+            _results.push(target[option] = clone);
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+      for (_i = 0, _len = args.length; _i < _len; _i++) {
+        arg = args[_i];
+        _fn(arg);
+      }
+      return target;
+    };
+
+    Util.prototype.to_hex = function(color) {
+      var b, c, g, r;
+      if (color.match(/^#?[0-9a-fA-F]{6}|[0-9a-fA-F]{3}$\/i/)) {
+        if (color.charAt(0 === '#')) {
+          return color;
+        } else {
+          return '#' + color;
+        }
+      } else if (color.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/)) {
+        c = [parseInt(RegExp.$1, 10), parseInt(RegExp.$2, 10), parseInt(RegExp.$3, 10)];
+        if (c.length === 3) {
+          r = this.zero_fill(c[0].toString(16, 2));
+          g = this.zero_fill(c[1].toString(16, 2));
+          b = this.zero_fill(c[2].toString(16, 2));
+          return '#' + r + g + b;
+        }
+      } else {
+        return false;
+      }
+    };
+
+    Util.prototype.to_rgb = function(color) {
+      var b, c, g, r;
+      if (color.match(/^rgb\(\s*\d{1,3}\s*,\s\d{1,3}\s*,\s*\d{1,3}\s*\)$/)) {
+        return color;
+      } else if (color.match(/^#?([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})$\/i/)) {
+        c = [parseInt(RegExp.$1, 16), parseInt(RegExp.$2, 16), parseInt(RegExp.$3, 16)];
+        r = c[0].toString(10);
+        g = c[1].toString(10);
+        b = c[2].toString(10);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+      } else {
+        return false;
+      }
+    };
+
+    Util.prototype.strip_script = function(link) {
+      var script;
+      if (link.match(/^javascript:(\w\W.)/ || link.match(/(\w\W.)\(\)/))) {
+        script = RegExp.$1;
+        console.log('Script stripped from link: ', script);
+        return 'javascript:void(0)';
+      } else {
+        return link;
+      }
+    };
+
+    Util.prototype.wrap = function(e, fn) {
+      var args, i;
+      i = 2;
+      if (e.preventDefault != null) {
+        e.preventDefault();
+        e.stopPropagation();
+      } else {
+        fn = e;
+        i--;
+      }
+      args = Array.prototype.slice.call(arguments, i);
+      return function() {
+        return fn.apply(this, args);
+      };
+    };
+
+    Util.prototype.zero_fill = function(num, length) {
+      return (Array(length).join('0') + num).slice(-length);
+    };
+
+    function Util() {
+      this.zero_fill = __bind(this.zero_fill, this);
+      this.strip_script = __bind(this.strip_script, this);
+      this.to_rgb = __bind(this.to_rgb, this);
+      this.to_hex = __bind(this.to_hex, this);
+      this.extend = __bind(this.extend, this);
+      this.currency = __bind(this.currency, this);
+      this.throttle = __bind(this.throttle, this);
+      this.prep_animation = __bind(this.prep_animation, this);
+      this.timestamp = __bind(this.timestamp, this);
+      this.now = __bind(this.now, this);
+      this.block = __bind(this.block, this);
+      this.unbind = __bind(this.unbind, this);
+      this.bind = __bind(this.bind, this);
+      this.is_id = __bind(this.is_id, this);
+      this.has_class = __bind(this.has_class, this);
+      this.get_offset = __bind(this.get_offset, this);
+      this.get = __bind(this.get, this);
+      this.remove = __bind(this.remove, this);
+      this.add = __bind(this.add, this);
+      this.create_doc_frag = __bind(this.create_doc_frag, this);
+      this.create_element_string = __bind(this.create_element_string, this);
+      this.filter = __bind(this.filter, this);
+      this.to_array = __bind(this.to_array, this);
+      this.in_array = __bind(this.in_array, this);
+      this.is_body = __bind(this.is_body, this);
+      this.is_empty_object = __bind(this.is_empty_object, this);
+      this.is_raw_object = __bind(this.is_raw_object, this);
+      this.is_object = __bind(this.is_object, this);
+      this.is_function = __bind(this.is_function, this);
+      this.is = __bind(this.is, this);
+      var _this = this;
+      this._state = {
+        active: null,
+        queues: {
+          fx: [],
+          dom: [],
+          handlers: {}
+        }
+      };
+      this.internal = {
+        queues: {
+          add: function(name, callback) {
+            _this._state.queues[name] = [];
+            return _this._state.queues.handlers[name] = _this.debounce(function(n, c) {
+              return _this.internal.queues.process(n, c);
+            }, _this.prep_animation().duration, true);
+          },
+          remove: function(name, callback) {
+            var handler, q;
+            handler = _this._state.queues.handlers[name];
+            delete _this._state.queues.handlers[name];
+            q = _this._state.queues[name];
+            delete _this._state.queues[name];
+            if (q.length > 0) {
+              return {
+                queue: q,
+                handler: handler
+              };
+            } else {
+              return true;
+            }
+          },
+          go: function(name, callback) {
+            return _this._state.queues.handlers[name](name, callback);
+          },
+          process: function(name, callback) {
+            var q;
+            q = _this._state.queues[name];
+            _this._state.queues[name] = [];
+            return callback != null ? callback.call(_this, {
+              queue: q,
+              name: name
+            }) : void 0;
+          }
+        }
+      };
+      this._init = function(apptools) {};
+    }
+
+    return Util;
+
+  }).call(this);
+
+  this.__apptools_preinit.abstract_base_classes.push(Util);
+
+  this.__apptools_preinit.deferred_core_modules.push({
+    module: Util
+  });
+
+  window.Util = Util = new Util();
+
   CoreDevAPI = (function(_super) {
 
     __extends(CoreDevAPI, _super);
@@ -517,6 +1041,23 @@
 
   this.__apptools_preinit.abstract_base_classes.push(CoreDevAPI);
 
+  ModelException = (function(_super) {
+
+    __extends(ModelException, _super);
+
+    function ModelException(source, message) {
+      this.source = source;
+      this.message = message;
+    }
+
+    ModelException.prototype.toString = function() {
+      return '[' + this.source + '] ModelException: ' + this.message;
+    };
+
+    return ModelException;
+
+  })(Error);
+
   CoreModelAPI = (function(_super) {
 
     __extends(CoreModelAPI, _super);
@@ -525,13 +1066,243 @@
 
     CoreModelAPI.events = [];
 
-    function CoreModelAPI(apptools, window) {}
+    function CoreModelAPI() {
+      var _this = this;
+      this.internal = {
+        block: function() {
+          var async_method, params, results, _done;
+          async_method = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+          _done = false;
+          results = null;
+          async_method.apply(null, __slice.call(params).concat([function(r) {
+            results = r;
+            return _done = true;
+          }]));
+          while (true) {
+            if (_done !== false) break;
+          }
+          return results;
+        }
+      };
+      this.put = function(object) {
+        return _this.internal.block(_this.put_async, object);
+      };
+      this.get = function(key, kind) {
+        return _this.internal.block(_this.get_async, key, kind);
+      };
+      this["delete"] = function(key, kind) {
+        return _this.internal.block(_this.delete_async, key, kind);
+      };
+      this.put_async = function(callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage.put(_this.constructor.prototype.name, callback);
+      };
+      this.get_async = function(key, callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage.get(_this.key, _this.constructor.prototype.name, callback);
+      };
+      this.delete_async = function(callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage["delete"](_this.key, _this.constructor.prototype.name, callback);
+      };
+      this.all = function(callback) {
+        if (!(callback != null) || !(Util != null ? Util.is_function(callback) : void 0)) {
+          if (callback != null) {
+            throw 'Provided callback isn\'t a function. Whoops.';
+          } else {
+            throw 'all() requires a callback.';
+          }
+        } else {
+          throw 'all() currently in active development, sorry.';
+        }
+      };
+      this.register = function() {
+        return apptools.dev.verbose('CoreModelAPI', 'register() currently in active development, sorry.');
+      };
+    }
+
+    CoreModelAPI.init = function() {};
 
     return CoreModelAPI;
 
   })(CoreAPI);
 
+  Model = (function() {
+
+    Model.prototype.log = function(source, message) {
+      if (message != null) {
+        if ($.apptools != null) {
+          return $.apptools.dev.verbose(source, message);
+        } else {
+          return console.log('[' + source + ']', message);
+        }
+      } else if (source != null) {
+        message = source;
+        source = this.constructor.name;
+        return this.log(source, message);
+      } else {
+        return this.log('Model', 'No message passed to log(). (You get a log message anyway <3)');
+      }
+    };
+
+    Model.prototype.validate = function(object, cls, safe) {
+      var check, key, results, value,
+        _this = this;
+      if (cls == null) cls = object.constructor.prototype.model;
+      if (safe == null) safe = false;
+      if (object != null) {
+        if (safe) {
+          results = {};
+          check = function(k, v) {
+            if ((cls[k] != null) && (v != null) === (cls[k] != null) && v.constructor.name === cls[k].constructor.name) {
+              return results[k] = v;
+            }
+          };
+        } else {
+          results = [];
+          check = function(k, v) {
+            if (!(cls[k] != null) || (v != null) !== (cls[k] != null) || v.constructor.name !== cls[k].constructor.name) {
+              return results.push({
+                k: v
+              });
+            }
+          };
+        }
+        for (key in object) {
+          if (!__hasProp.call(object, key)) continue;
+          value = object[key];
+          check(key, value);
+        }
+        if (safe) return results;
+        return results.length === 0;
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to validate().');
+      }
+    };
+
+    Model.prototype.from_message = function(object, message, strict) {
+      var cached_obj, modsafe, p, prop, v, val;
+      if (message == null) message = {};
+      if (strict == null) strict = false;
+      if (object != null) {
+        cached_obj = object;
+        this.log('Validating incoming RPC update...');
+        if (this.validate(message, object.constructor.prototype.model)) {
+          for (prop in message) {
+            if (!__hasProp.call(message, prop)) continue;
+            val = message[prop];
+            object[prop] = val;
+          }
+          this.log('Valid model matched. Returning updated object...');
+          return object;
+        } else {
+          this.log('Strict validation failed.');
+          if (!strict) {
+            this.log('Nonstrict validation allowed, trying modelsafe conversion...');
+            modsafe = this.validate(message, object.constructor.prototype.model, true);
+            if (Util.is_empty_object(modsafe)) {
+              this.log('No modelsafe properties found, canceling update...');
+              return cached_obj;
+            } else {
+              for (p in modsafe) {
+                if (!__hasProp.call(modsafe, p)) continue;
+                v = modsafe[p];
+                object[p] = v;
+              }
+              this.log('Modelsafe conversion succeeded! Returning updated object...');
+              return object;
+            }
+          } else {
+            this.log('Strict validation only, canceling update...');
+            return cached_obj;
+          }
+        }
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to from_message().');
+      }
+    };
+
+    Model.prototype.to_message = function(object) {
+      var message, prop, val;
+      if (object != null) {
+        message = {};
+        for (prop in object) {
+          if (!__hasProp.call(object, prop)) continue;
+          val = object[prop];
+          if ((object.constructor.prototype.model[prop] != null) && typeof val !== 'function') {
+            message[prop] = val;
+          }
+        }
+        return message;
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to to_message().');
+      }
+    };
+
+    function Model(key) {
+      this.to_message = __bind(this.to_message, this);
+      this.from_message = __bind(this.from_message, this);
+      this.validate = __bind(this.validate, this);
+      this.log = __bind(this.log, this);
+      var prop, val,
+        _this = this;
+      if (Util.is_raw_object(key)) {
+        for (prop in key) {
+          val = key[prop];
+          this[prop] = val;
+        }
+      } else {
+        this.key = key;
+      }
+      this.from_message = function(message, strict) {
+        return _this.constructor.prototype.from_message(_this, message, strict);
+      };
+      this.to_message = function() {
+        return _this.constructor.prototype.to_message(_this);
+      };
+      this.log = function(message) {
+        return _this.constructor.prototype.log(_this.constructor.name, message);
+      };
+    }
+
+    /*
+    
+        # methods are placeholders for now :)
+    
+        # synchronous methods
+        put: (args...) => $.apptools.model.put(@, args...)
+        get: (args...) => $.apptools.model.get(@, args...)
+        delete: (args...) => $.apptools.model.delete(@, args...)
+    
+        # asynchronous methods - tentative until params finalized
+        put_async: (args...) => $.apptools.model.put_async(@, args...)
+        get_async: (args...) => $.apptools.model.get_async(@, args...)
+        delete_async: (args...) => $.apptools.model.delete_async(@, args...)
+    
+        all: (args...) => $.apptools.model.all(@, args...)
+    
+        render: (template) =>
+    */
+
+    return Model;
+
+  })();
+
   this.__apptools_preinit.abstract_base_classes.push(CoreModelAPI);
+
+  this.__apptools_preinit.abstract_base_classes.push(Model);
 
   CoreEventsAPI = (function(_super) {
 
@@ -907,13 +1678,354 @@
 
   this.__apptools_preinit.abstract_base_classes.push(CoreDispatchAPI);
 
+  StorageDriver = (function(_super) {
+
+    __extends(StorageDriver, _super);
+
+    StorageDriver.methods = ['compatible', 'construct'];
+
+    StorageDriver["export"] = "public";
+
+    function StorageDriver() {}
+
+    return StorageDriver;
+
+  })(CoreInterface);
+
+  this.compatible = function() {};
+
+  this.construct = function() {};
+
+  StorageAdapter = (function(_super) {
+
+    __extends(StorageAdapter, _super);
+
+    StorageAdapter.methods = ['get', 'put', 'delete', 'clear', 'get_async', 'put_async', 'delete_async', 'clear_async'];
+
+    StorageAdapter["export"] = "public";
+
+    function StorageAdapter() {
+      return;
+    }
+
+    return StorageAdapter;
+
+  })(CoreInterface);
+
+  KeyEncoder = (function(_super) {
+
+    __extends(KeyEncoder, _super);
+
+    KeyEncoder.methods = ['build_key', 'encode_key', 'build_cluster', 'encode_cluster'];
+
+    KeyEncoder["export"] = "public";
+
+    function KeyEncoder() {
+      return;
+    }
+
+    return KeyEncoder;
+
+  })(CoreInterface);
+
+  if (this.__apptools_preinit != null) {
+    if (!(this.__apptools_preinit.abstract_base_classes != null)) {
+      this.__apptools_preinit.abstract_base_classes = [];
+    }
+    if (!(this.__apptools_preinit.deferred_core_modules != null)) {
+      this.__apptools_preinit.deferred_core_modules = [];
+    }
+  } else {
+    this.__apptools_preinit = {
+      abstract_base_classes: [],
+      deferred_core_modules: []
+    };
+  }
+
+  this.__apptools_preinit.detected_storage_engines = [];
+
+  this.__apptools_preinit.abstract_base_classes.push(StorageDriver);
+
+  this.__apptools_preinit.abstract_base_classes.push(StorageAdapter);
+
+  this.__apptools_preinit.abstract_feature_interfaces.push({
+    adapter: StorageDriver,
+    name: "storage"
+  });
+
+  SimpleKeyEncoder = (function(_super) {
+
+    __extends(SimpleKeyEncoder, _super);
+
+    function SimpleKeyEncoder() {
+      var _this = this;
+      this.build_key = function() {};
+      this.encode_key = function() {};
+      this.build_cluster = function() {};
+      this.encode_cluster = function() {};
+    }
+
+    return SimpleKeyEncoder;
+
+  })(KeyEncoder);
+
+  _simple_key_encoder = new SimpleKeyEncoder();
+
+  /* === DOM Storage Engines ===
+  */
+
+  LocalStorageEngine = (function(_super) {
+
+    __extends(LocalStorageEngine, _super);
+
+    LocalStorageEngine._state = {
+      runtime: {
+        count: {
+          total_keys: 0,
+          by_kind: []
+        }
+      }
+    };
+
+    function LocalStorageEngine(name) {
+      var _this = this;
+      this.name = name;
+      this.get_async = function(key, callback) {
+        var object;
+        return callback.call(object = _this.get(key));
+      };
+      this.put_async = function(key, value, callback) {
+        _this.put(key, value);
+        return callback.call(value);
+      };
+      this.delete_async = function(key, callback) {
+        _this["delete"](key);
+        return callback.call(_this);
+      };
+      this.clear_async = function(callback) {
+        _this.clear();
+        return callback.call(_this);
+      };
+      this.get = function(key) {
+        return localStorage.getItem(key);
+      };
+      this.put = function(key, value) {
+        if (!(_this.get(key) != null)) _this._state.runtime.count.total_keys++;
+        return localStorage.setItem(key, value);
+      };
+      this["delete"] = function(key) {
+        _this._state.runtime.count.total_keys--;
+        return localStorage.removeItem(key);
+      };
+      this.clear = function() {
+        _this._state.runtime.count.total_keys = 0;
+        return localStorage.clear();
+      };
+      return;
+    }
+
+    return LocalStorageEngine;
+
+  })(StorageAdapter);
+
+  SessionStorageEngine = (function(_super) {
+
+    __extends(SessionStorageEngine, _super);
+
+    SessionStorageEngine._state = {
+      runtime: {
+        count: {
+          total_keys: 0,
+          by_kind: []
+        }
+      }
+    };
+
+    function SessionStorageEngine(name) {
+      var _this = this;
+      this.name = name;
+      this.get_async = function(key, callback) {
+        var object;
+        return callback.call(object = _this.get(key));
+      };
+      this.put_async = function(key, value, callback) {
+        _this.put(key, value);
+        return callback.call(value);
+      };
+      this.delete_async = function(key, callback) {
+        _this["delete"](key);
+        return callback.call(_this);
+      };
+      this.clear_async = function(callback) {
+        _this.clear();
+        return callback.call(_this);
+      };
+      this.get = function(key) {
+        return sessionStorage.getItem(key);
+      };
+      this.put = function(key, value) {
+        if (!(_this.get(key) != null)) _this._state.runtime.count.total_keys++;
+        return sessionStorage.setItem(key, value);
+      };
+      this["delete"] = function(key) {
+        _this._state.runtime.count.total_keys--;
+        return sessionStorage.removeItem(key);
+      };
+      this.clear = function() {
+        _this._state.runtime.count.total_keys = 0;
+        return sessionStorage.clear();
+      };
+      return;
+    }
+
+    return SessionStorageEngine;
+
+  })(StorageAdapter);
+
+  /* === DOM Storage Drivers ===
+  */
+
+  LocalStorageDriver = (function(_super) {
+
+    __extends(LocalStorageDriver, _super);
+
+    function LocalStorageDriver() {
+      LocalStorageDriver.__super__.constructor.apply(this, arguments);
+    }
+
+    LocalStorageDriver._state = {
+      constructor: function() {
+        var _this = this;
+        this.compatible = function() {
+          return !!window.localStorage;
+        };
+        this.construct = function(name) {
+          var new_engine;
+          if (name == null) name = 'appstorage';
+          if (_this.compatible()) {
+            return new_engine = new LocalStorageEngine(name);
+          } else {
+            return false;
+          }
+        };
+      }
+    };
+
+    return LocalStorageDriver;
+
+  })(StorageDriver);
+
+  SessionStorageDriver = (function(_super) {
+
+    __extends(SessionStorageDriver, _super);
+
+    function SessionStorageDriver() {
+      SessionStorageDriver.__super__.constructor.apply(this, arguments);
+    }
+
+    SessionStorageDriver._state = {
+      constructor: function() {
+        var _this = this;
+        this.compatible = function() {
+          return !!window.sessionStorage;
+        };
+        this.construct = function(name) {
+          var new_engine;
+          if (name == null) name = 'appstorage';
+          if (_this.compatible()) {
+            return new_engine = new SessionStorageEngine(name);
+          } else {
+            return false;
+          }
+        };
+      }
+    };
+
+    return SessionStorageDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "LocalStorage",
+    adapter: LocalStorageEngine,
+    driver: LocalStorageDriver,
+    key_encoder: _simple_key_encoder
+  });
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "SessionStorage",
+    adapter: SessionStorageEngine,
+    driver: SessionStorageDriver,
+    key_encoder: _simple_key_encoder
+  });
+
+  IndexedDBEngine = (function(_super) {
+
+    __extends(IndexedDBEngine, _super);
+
+    function IndexedDBEngine() {
+      return;
+    }
+
+    return IndexedDBEngine;
+
+  })(StorageAdapter);
+
+  IndexedDBDriver = (function(_super) {
+
+    __extends(IndexedDBDriver, _super);
+
+    function IndexedDBDriver() {
+      return;
+    }
+
+    return IndexedDBDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "IndexedDB",
+    adapter: IndexedDBEngine,
+    driver: IndexedDBDriver
+  });
+
+  WebSQLEngine = (function(_super) {
+
+    __extends(WebSQLEngine, _super);
+
+    function WebSQLEngine() {
+      return;
+    }
+
+    return WebSQLEngine;
+
+  })(StorageAdapter);
+
+  WebSQLDriver = (function(_super) {
+
+    __extends(WebSQLDriver, _super);
+
+    function WebSQLDriver() {
+      return;
+    }
+
+    return WebSQLDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "WebSQL",
+    adapter: WebSQLEngine,
+    driver: WebSQLDriver
+  });
+
   CoreStorageAPI = (function(_super) {
 
     __extends(CoreStorageAPI, _super);
 
     CoreStorageAPI.mount = 'storage';
 
-    CoreStorageAPI.events = ['STORAGE_INIT', 'STORAGE_READY', 'STORAGE_ERROR', 'STORAGE_ACTIVITY', 'STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE', 'COLLECTION_SCAN', 'COLLECTION_CREATE', 'COLLECTION_DESTROY', 'COLLECTION_UPDATE', 'COLLECTION_SYNC'];
+    CoreStorageAPI.events = ['STORAGE_INIT', 'ENGINE_LOADED', 'STORAGE_READY', 'STORAGE_ERROR', 'STORAGE_ACTIVITY', 'STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE', 'COLLECTION_SCAN', 'COLLECTION_CREATE', 'COLLECTION_DESTROY', 'COLLECTION_UPDATE', 'COLLECTION_SYNC'];
 
     function CoreStorageAPI(apptools, window) {
       var _this = this;
@@ -938,7 +2050,10 @@
             enabled: false,
             interval: 120
           },
-          adapters: {},
+          drivers: [],
+          engines: {},
+          encrypt: false,
+          integrity: false,
           obfuscate: false,
           local_only: false,
           callbacks: {
@@ -954,7 +2069,31 @@
       this.internal = {
         check_support: function(modernizr) {},
         bootstrap: function(lawnchair) {},
-        provision_collection: function(name, adapter, callback) {}
+        provision_collection: function(name, adapter, callback) {},
+        add_storage_engine: function(name, driver, engine) {
+          var d, e;
+          try {
+            d = new driver(apptools);
+            e = new engine(apptools);
+          } catch (err) {
+            return false;
+          }
+          if (e.compatible()) {
+            _this._state.config.engines[name] = e;
+            driver.adapter = _this._state.config.engines[name];
+            _this._state.config.drivers.push(driver);
+            apptools.sys.drivers.install('storage', name, d, (d.enabled != null) | true, (d.priority != null) | 50, function(driver) {
+              return apptools.events.trigger('ENGINE_LOADED', {
+                driver: driver,
+                engine: driver.adapter
+              });
+            });
+            return true;
+          } else {
+            apptools.dev.verbose('StorageEngine', 'Detected incompatible storage engine. Skipping.', name, driver, engine);
+            return false;
+          }
+        }
       };
       this.get = function() {};
       this.list = function() {};
@@ -964,8 +2103,16 @@
       this["delete"] = function() {};
       this.sync = function() {};
       this._init = function() {
-        apptools.dev.verbose('Storage', 'Storage support is currently stubbed.');
+        var engine, _i, _len, _ref, _ref2, _ref3;
         apptools.events.trigger('STORAGE_INIT');
+        apptools.dev.verbose('Storage', 'Storage support is currently under construction.');
+        if (((_ref = apptools.sys) != null ? (_ref2 = _ref.preinit) != null ? _ref2.detected_storage_engines : void 0 : void 0) != null) {
+          _ref3 = apptools.sys.preinit.detected_storage_engines;
+          for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
+            engine = _ref3[_i];
+            _this.internal.add_storage_engine(engine.name, engine.driver, engine.adapter);
+          }
+        }
         return apptools.events.trigger('STORAGE_READY');
       };
       apptools.events.bridge(['STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE'], 'STORAGE_ACTIVITY');
@@ -976,30 +2123,7 @@
 
   })(CoreAPI);
 
-  StorageDriver = (function(_super) {
-
-    __extends(StorageDriver, _super);
-
-    StorageDriver.methods = [];
-
-    StorageDriver["export"] = "private";
-
-    function StorageDriver() {
-      return;
-    }
-
-    return StorageDriver;
-
-  })(CoreInterface);
-
-  this.__apptools_preinit.abstract_base_classes.push(StorageDriver);
-
   this.__apptools_preinit.abstract_base_classes.push(CoreStorageAPI);
-
-  this.__apptools_preinit.abstract_feature_interfaces.push({
-    adapter: StorageDriver,
-    name: "storage"
-  });
 
   RPCAPI = (function(_super) {
 
@@ -1072,7 +2196,7 @@
         agent: {}
       };
       this.ajax = {
-        accepts: 'application/json',
+        accept: 'application/json',
         async: true,
         cache: true,
         global: true,
@@ -1271,15 +2395,6 @@
           }
         }
       };
-      if (apptools.sys.libraries.resolve('jQuery') !== false) {
-        $.ajaxSetup({
-          global: true,
-          xhr: function() {
-            return _this.internals.transports.xhr.factory();
-          },
-          headers: this.internals.config.headers
-        });
-      }
       this.rpc = {
         lastRequest: null,
         lastFailure: null,
@@ -1288,8 +2403,19 @@
         action_prefix: null,
         alt_push_response: false,
         used_ids: [],
-        factory: function(name, base_uri, methods, config) {
-          return apptools.api[name] = new RPCAPI(name, base_uri, methods, config);
+        factory: function(name_or_apis, base_uri, methods, config) {
+          var item, name, _i, _len;
+          if (Util.is_array(name_or_apis)) {
+            if (name_or_apis != null) {
+              for (_i = 0, _len = name_or_apis.length; _i < _len; _i++) {
+                item = name_or_apis[_i];
+                apptools.api[(name = item.name)] = new RPCAPI(name, item.base_uri, item.methods, item.config);
+              }
+            }
+          } else {
+            apptools.api[(name = name_or_apis)] = new RPCAPI(name, base_uri, methods, config);
+          }
+          return _this;
         },
         _assembleRPCURL: function(method, api, prefix, base_uri) {
           if (!(api != null) && !(base_uri != null)) {
@@ -1348,6 +2474,18 @@
           var context;
           if (transport == null) transport = 'xhr';
           apptools.dev.verbose('RPC', 'Fulfill', config, request, callbacks);
+          if (apptools.sys.libraries.resolve('jQuery') !== false) {
+            $.ajaxSetup({
+              type: 'POST',
+              accepts: 'application/json',
+              contentType: 'application/json',
+              global: true,
+              xhr: function() {
+                return _this.internals.transports.xhr.factory();
+              },
+              headers: _this.internals.config.headers
+            });
+          }
           _this.rpc.lastRequest = request;
           _this.rpc.history[request.envelope.id] = {
             request: request,
@@ -1847,6 +2985,23 @@
 
   })(CoreInterface);
 
+  Template = (function(_super) {
+
+    __extends(Template, _super);
+
+    function Template() {
+      this.name = '';
+      this.source = '';
+      this.cacheable = {
+        rendered: false,
+        source: false
+      };
+    }
+
+    return Template;
+
+  })(Model);
+
   this.__apptools_preinit.abstract_base_classes.push(QueryDriver);
 
   this.__apptools_preinit.abstract_base_classes.push(RenderDriver);
@@ -1856,61 +3011,6 @@
   this.__apptools_preinit.abstract_feature_interfaces.push({
     adapter: RenderDriver,
     name: "render"
-  });
-
-  CoreWidgetAPI = (function(_super) {
-
-    __extends(CoreWidgetAPI, _super);
-
-    function CoreWidgetAPI() {
-      CoreWidgetAPI.__super__.constructor.apply(this, arguments);
-    }
-
-    CoreWidgetAPI.mount = 'widget';
-
-    CoreWidgetAPI.events = [];
-
-    CoreWidgetAPI.prototype._init = function(apptools) {
-      apptools.sys.state.add_flag('widgets');
-      apptools.dev.verbose('CoreWidget', 'Widget functionality is currently stubbed.');
-    };
-
-    return CoreWidgetAPI;
-
-  })(CoreAPI);
-
-  CoreWidget = (function(_super) {
-
-    __extends(CoreWidget, _super);
-
-    function CoreWidget() {
-      CoreWidget.__super__.constructor.apply(this, arguments);
-    }
-
-    return CoreWidget;
-
-  })(CoreObject);
-
-  if (this.__apptools_preinit != null) {
-    if (!(this.__apptools_preinit.abstract_base_classes != null)) {
-      this.__apptools_preinit.abstract_base_classes = [];
-    }
-    if (!(this.__apptools_preinit.deferred_core_modules != null)) {
-      this.__apptools_preinit.deferred_core_modules = [];
-    }
-  } else {
-    this.__apptools_preinit = {
-      abstract_base_classes: [],
-      deferred_core_modules: []
-    };
-  }
-
-  this.__apptools_preinit.abstract_base_classes.push(CoreWidget);
-
-  this.__apptools_preinit.abstract_base_classes.push(CoreWidgetAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: CoreWidgetAPI
   });
 
   AppTools = (function() {
@@ -1948,15 +3048,16 @@
         state: {
           status: 'NOT_READY',
           flags: ['base'],
+          preinit: {},
           modules: {},
           classes: {},
           interfaces: {},
           integrations: [],
           add_flag: function(flagname) {
-            return this.sys.flags.push(flagname);
+            return _this.sys.state.flags.push(flagname);
           },
           consider_preinit: function(preinit) {
-            var cls, interface, lib, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
+            var cls, lib, _i, _interface, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
             if (preinit.abstract_base_classes != null) {
               _ref = preinit.abstract_base_classes;
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -1982,8 +3083,8 @@
             if (preinit.abstract_feature_interfaces != null) {
               _ref3 = preinit.abstract_feature_interfaces;
               for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
-                interface = _ref3[_k];
-                _this.sys.interfaces.install(interface.name, interface.adapter);
+                _interface = _ref3[_k];
+                _this.sys.interfaces.install(_interface.name, _interface.adapter);
               }
             }
             return preinit;
@@ -1991,7 +3092,7 @@
         },
         modules: {
           install: function(module, mountpoint_or_callback, callback) {
-            var module_name, mountpoint, pass_parent, target_mod;
+            var module_name, mountpoint, pass_parent, target_mod, _base;
             if (mountpoint_or_callback == null) mountpoint_or_callback = null;
             if (callback == null) callback = null;
             if (mountpoint_or_callback != null) {
@@ -2020,20 +3121,24 @@
             }
             if (!(mountpoint[module_name] != null)) {
               if (pass_parent) {
-                target_mod = mountpoint[module_name] = new module(_this, mountpoint, window);
+                target_mod = new module(_this, mountpoint, window);
+                mountpoint[module_name] = target_mod;
                 _this.sys.state.modules[module_name] = {
                   module: target_mod,
                   classes: {}
                 };
               } else {
-                target_mod = mountpoint[module_name] = new module(_this, window);
+                target_mod = new module(_this, window);
+                mountpoint[module_name] = target_mod;
                 _this.sys.state.modules[module_name] = {
                   module: target_mod,
                   classes: {}
                 };
               }
             }
-            if (module._init != null) module._init(_this);
+            if (typeof (_base = mountpoint[module_name])._init === "function") {
+              _base._init(_this);
+            }
             if ((_this.dev != null) && (_this.dev.verbose != null)) {
               _this.dev.verbose('ModuleLoader', 'Installed module:', target_mod, ' at mountpoint: ', mountpoint, ' under the name: ', module_name);
             }
@@ -2158,6 +3263,7 @@
         return events.register(_this.sys.core_events);
       });
       if (window.__apptools_preinit != null) {
+        this.sys.state.preinit = window.__apptools_preinit;
         this.sys.state.consider_preinit(window.__apptools_preinit);
       }
       if ((window != null ? window.Modernizr : void 0) != null) {
@@ -2188,12 +3294,7 @@
         });
       }
       if ((window != null ? window.Backbone : void 0) != null) {
-        this.sys.libraries.install('Backbone', window.Backbone, function(library) {
-          window.AppToolsView.prototype.apptools = _this;
-          window.AppToolsModel.prototype.apptools = _this;
-          window.AppToolsRouter.prototype.apptools = _this;
-          return window.AppToolsCollection.prototype.apptools = _this;
-        });
+        this.sys.libraries.install('Backbone', window.Backbone);
       }
       if ((window != null ? window.Lawnchair : void 0) != null) {
         this.sys.libraries.install('Lawnchair', window.Lawnchair, function(library) {

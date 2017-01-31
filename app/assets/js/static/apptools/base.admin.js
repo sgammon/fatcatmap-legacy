@@ -1,10 +1,11 @@
 (function() {
-  var AppException, AppTools, AppToolsCollection, AppToolsException, AppToolsModel, AppToolsRouter, AppToolsView, BlogManagerAPI, ContentManagerAPI, CoreAPI, CoreAdminAPI, CoreAgentAPI, CoreDevAPI, CoreDispatchAPI, CoreEventsAPI, CoreException, CoreInterface, CoreModelAPI, CoreObject, CorePushAPI, CoreRPCAPI, CoreRenderAPI, CoreStorageAPI, CoreUserAPI, CoreWidget, CoreWidgetAPI, Expand, Find, Milk, PageManagerAPI, Parse, PushDriver, QueryDriver, RPCAPI, RPCDriver, RPCRequest, RPCResponse, RenderDriver, SiteManagerAPI, StorageDriver, TemplateCache,
+  var AppException, AppTools, AppToolsCollection, AppToolsException, AppToolsModel, AppToolsRouter, AppToolsView, CoreAPI, CoreAgentAPI, CoreDevAPI, CoreDispatchAPI, CoreEventsAPI, CoreException, CoreInterface, CoreModelAPI, CoreObject, CorePushAPI, CoreRPCAPI, CoreRenderAPI, CoreStorageAPI, CoreUserAPI, Expand, Find, IndexedDBDriver, IndexedDBEngine, KeyEncoder, LocalStorageDriver, LocalStorageEngine, Milk, Model, ModelException, Parse, PushDriver, QueryDriver, RPCAPI, RPCDriver, RPCRequest, RPCResponse, RenderDriver, SessionStorageDriver, SessionStorageEngine, SimpleKeyEncoder, StorageAdapter, StorageDriver, Template, TemplateCache, Util, WebSQLDriver, WebSQLEngine, _simple_key_encoder,
     __slice = Array.prototype.slice,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; },
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    _this = this;
 
   this.__apptools_preinit = {};
 
@@ -444,6 +445,528 @@
 
   this.__apptools_preinit.abstract_base_classes.push(AppToolsCollection);
 
+  Util = (function() {
+    var _this = this;
+
+    Util.mount = 'util';
+
+    Util.events = [];
+
+    Util.prototype.is = function(thing) {
+      return !this.in_array(thing, [false, null, NaN, void 0, 0, {}, [], '', 'false', 'False', 'null', 'NaN', 'undefined', '0', 'none', 'None']);
+    };
+
+    Util.prototype.is_function = function(object) {
+      return typeof object === 'function';
+    };
+
+    Util.prototype.is_object = function(object) {
+      return typeof object === 'object';
+    };
+
+    Util.prototype.is_raw_object = function(object) {
+      if (!object || typeof object !== 'object' || object.nodeType || (typeof object === 'object' && __indexOf.call(object, 'setInterval') >= 0)) {
+        return false;
+      }
+      if ((object.constructor != null) && !object.hasOwnProperty('constructor') && !object.constructor.prototype.hasOwnProperty('isPrototypeOf')) {
+        return false;
+      }
+      return true;
+    };
+
+    Util.prototype.is_empty_object = function(object) {
+      var key;
+      for (key in object) {
+        return false;
+      }
+      return true;
+    };
+
+    Util.prototype.is_body = function(object) {
+      return this.is_object(object) && (Object.prototype.toString.call(object) === '[object HTMLBodyElement]' || object.constructor.name === 'HTMLBodyElement');
+    };
+
+    Util.prototype.is_array = Array.isArray || function(object) {
+      return typeof object === 'array' || Object.prototype.toString.call(object) === '[object Array]' || object.constructor.name === 'Array';
+    };
+
+    Util.prototype.in_array = function(item, array) {
+      var it, matches, _fn, _i, _len,
+        _this = this;
+      if (array.indexOf != null) return !!~array.indexOf(item);
+      matches = [];
+      _fn = function(it) {
+        if (it === item) return matches.push(it);
+      };
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        it = array[_i];
+        _fn(it);
+      }
+      return matches.length > 0;
+    };
+
+    Util.prototype.to_array = function(node_or_token_list) {
+      var array;
+      array = [];
+      for (i = node_or_token_list.length; i--; array.unshift(node_or_token_list[i]));
+      return array;
+    };
+
+    Util.prototype.filter = function(array, condition) {
+      var item, new_array, _i, _len;
+      new_array = [];
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        item = array[_i];
+        if (condition(item)) new_array.push(item);
+      }
+      return new_array;
+    };
+
+    Util.prototype.sort = null;
+
+    Util.prototype.create_element_string = function(tag, attrs, separator, ext) {
+      var el_str, k, no_close, v;
+      if (separator == null) separator = '*';
+      no_close = ['area', 'base', 'basefont', 'br', 'col', 'frame', 'hr', 'img', 'input', 'link'];
+      tag = tag.toLowerCase();
+      el_str = '<' + tag;
+      for (k in attrs) {
+        v = attrs[k];
+        el_str += ' ' + k + '="' + v + '"';
+      }
+      if (ext != null) el_str += ' ' + ext;
+      el_str += '>';
+      if (!this.in_array(tag, no_close)) el_str += separator + '</' + tag + '>';
+      return el_str;
+    };
+
+    Util.prototype.create_doc_frag = function(html_string) {
+      var frag, range;
+      range = document.createRange();
+      range.selectNode(document.getElementsByTagName('div').item(0));
+      frag = range.createContextualFragment(html_string);
+      return frag;
+    };
+
+    Util.prototype.add = function(element_type, attrs, parent_node) {
+      var node_id, q_name,
+        _this = this;
+      if (!(element_type != null) || !this.is_object(attrs)) return false;
+      q_name = this.is_body(parent_node) || !(parent_node != null) || !(node_id = parent_node.getAttribute('id')) ? 'dom' : node_id;
+      if (!(this._state.queues[q_name] != null)) this.internal.queues.add(q_name);
+      this._state.queues[q_name].push([element_type, attrs]);
+      return this.internal.queues.go(q_name, function(response) {
+        var args, dfrag, html, parent, q, _i, _len;
+        q = response.queue;
+        parent = response.name === 'dom' ? document.body : _this.get(response.name);
+        html = [];
+        for (_i = 0, _len = q.length; _i < _len; _i++) {
+          args = q[_i];
+          html.push(_this.create_element_string.apply(_this, args));
+        }
+        dfrag = _this.create_doc_frag(html.join(''));
+        return parent.appendChild(dfrag);
+      });
+    };
+
+    Util.prototype.remove = function(node) {
+      return node.parentNode.removeChild(node);
+    };
+
+    Util.prototype.get = function(query, node) {
+      var cls, id, tg;
+      if (node == null) node = document;
+      if (!(query != null)) return null;
+      if (query.nodeType) return query;
+      if ((id = document.getElementById(query)) != null) {
+        return id;
+      } else {
+        if ((cls = node.getElementsByClassName(query)).length > 0) {
+          return this.to_array(cls);
+        } else {
+          if ((tg = node.getElementsByTagName(query)).length > 0) {
+            return this.to_array(tg);
+          } else {
+            return null;
+          }
+        }
+      }
+    };
+
+    Util.prototype.get_offset = function(elem) {
+      var offL, offT;
+      offL = offT = 0;
+      while (true) {
+        offL += elem.offsetLeft;
+        offT += elem.offsetTop;
+        if (!(elem = elem.offsetParent)) break;
+      }
+      return {
+        left: offL,
+        top: offT
+      };
+    };
+
+    Util.prototype.has_class = function(element, cls) {
+      var _ref;
+      return ((_ref = element.classList) != null ? typeof _ref.contains === "function" ? _ref.contains(cls) : void 0 : void 0) || element.className && new RegExp('\\s*' + cls + '\\s*').test(element.className);
+    };
+
+    Util.prototype.is_id = function(str) {
+      if (str.charAt(0) === '#') return true;
+      if (document.getElementById(str) !== null) return true;
+      return false;
+    };
+
+    Util.prototype.bind = function(element, event, fn, prop) {
+      var el, ev, evt, func, _i, _j, _len, _len2;
+      if (prop == null) prop = false;
+      if (!(element != null)) return false;
+      if (this.is_array(element)) {
+        for (_i = 0, _len = element.length; _i < _len; _i++) {
+          el = element[_i];
+          this.bind(el, event, fn, prop);
+        }
+      } else if (this.is_array(event)) {
+        for (_j = 0, _len2 = event.length; _j < _len2; _j++) {
+          evt = event[_j];
+          this.bind(element, evt, fn, prop);
+        }
+      } else if (this.is_raw_object(event)) {
+        for (ev in event) {
+          func = event[ev];
+          this.bind(element, ev, func, prop);
+        }
+      } else {
+        return element.addEventListener(event, fn, prop);
+      }
+    };
+
+    Util.prototype.unbind = function(element, event) {
+      var el, ev, _i, _j, _len, _len2;
+      if (!(element != null)) return false;
+      if (this.is_array(element)) {
+        for (_i = 0, _len = element.length; _i < _len; _i++) {
+          el = element[_i];
+          this.unbind(el, event);
+        }
+      } else if (this.is_array(event)) {
+        for (_j = 0, _len2 = event.length; _j < _len2; _j++) {
+          ev = event[_j];
+          this.unbind(element, ev);
+        }
+      } else if (this.is_raw_object(element)) {
+        for (el in element) {
+          ev = element[el];
+          this.unbind(el, ev);
+        }
+      } else if (element.constructor.name === 'NodeList') {
+        return this.unbind(this.to_array(element), event);
+      } else {
+        return element.removeEventListener(event);
+      }
+    };
+
+    Util.prototype.block = function(async_method, object) {
+      var result, _done;
+      if (object == null) object = {};
+      console.log('[Util] Enforcing blocking at user request... :(');
+      _done = false;
+      result = null;
+      async_method(object, function(x) {
+        result = x;
+        return _done = true;
+      });
+      while (true) {
+        if (_done !== false) break;
+      }
+      return result;
+    };
+
+    Util.prototype.now = function() {
+      return +new Date();
+    };
+
+    Util.prototype.timestamp = function(d) {
+      if (d == null) d = new Date();
+      return [[d.getMonth() + 1, d.getDate(), d.getFullYear()].join('-'), [d.getHours(), d.getMinutes(), d.getSeconds()].join(':')].join(' ');
+    };
+
+    Util.prototype.prep_animation = function(t, e, c) {
+      var options;
+      options = !(t != null) ? {
+        duration: 400
+      } : ((t != null) && this.is_object(t) ? this.extend({}, t) : {
+        complete: c || (!c && e) || (is_function(t && t)),
+        duration: t,
+        easing: (c && e) || (e && !is_function(e))
+      });
+      return options;
+    };
+
+    Util.prototype.throttle = function(fn, buffer, prefire) {
+      var last, timer_id,
+        _this = this;
+      timer_id = null;
+      last = 0;
+      return function() {
+        var args, clear, elapsed, go;
+        args = arguments;
+        elapsed = _this.now() - last;
+        clear = function() {
+          go();
+          return timer_id = null;
+        };
+        go = function() {
+          last = _this.now();
+          return fn.apply(_this, args);
+        };
+        if (prefire && !timer_id) go();
+        if (!!timer_id) clearTimeout(timer_id);
+        if (!(prefire != null) && elapsed >= buffer) {
+          return go();
+        } else {
+          return timer_id = setTimeout((prefire ? clear : go), !(prefire != null) ? buffer - elapsed : buffer);
+        }
+      };
+    };
+
+    Util.prototype.debounce = function(fn, buffer, prefire) {
+      if (buffer == null) buffer = 200;
+      if (prefire == null) prefire = false;
+      return this.throttle(fn, buffer, prefire);
+    };
+
+    Util.prototype.currency = function(num) {
+      var char, index, len, new_nums, nums, process, _len,
+        _this = this;
+      len = (nums = String(num).split('').reverse()).length;
+      new_nums = [];
+      process = function(c, i) {
+        var sym;
+        if ((i + 1) % 3 === 0 && len - i > 1) {
+          sym = ',';
+        } else if (i === len - 1) {
+          sym = '$';
+        } else {
+          sym = '';
+        }
+        return new_nums.unshift(sym + c);
+      };
+      for (index = 0, _len = nums.length; index < _len; index++) {
+        char = nums[index];
+        process(char, index);
+      }
+      return new_nums.join('');
+    };
+
+    Util.prototype.extend = function() {
+      var arg, args, deep, i, len, target, _fn, _i, _len,
+        _this = this;
+      target = arguments[0] || {};
+      i = 1;
+      deep = false;
+      len = arguments.length;
+      if (typeof target === 'boolean') {
+        deep = target;
+        target = arguments[1] || {};
+        i++;
+      }
+      if (!this.is_object(target) && !this.is_function(target)) target = {};
+      args = Array.prototype.slice.call(arguments, i);
+      _fn = function(arg) {
+        var a, clone, copied_src, o, option, options, src, value, _results;
+        options = arg;
+        _results = [];
+        for (option in options) {
+          if (!__hasProp.call(options, option)) continue;
+          value = options[option];
+          if (target === value) continue;
+          o = String(option);
+          clone = value;
+          src = target[option];
+          if (deep && (clone != null) && (_this.is_raw_object(clone) || (a = _this.is_array(clone)))) {
+            if (a != null) {
+              a = false;
+              copied_src = src && (_this.is_array(src) ? src : []);
+            } else {
+              copied_src = src && (_this.is_raw_object(src) ? src : {});
+            }
+            _results.push(target[option] = _this.extend(deep, copied_src, clone));
+          } else if (clone != null) {
+            _results.push(target[option] = clone);
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      };
+      for (_i = 0, _len = args.length; _i < _len; _i++) {
+        arg = args[_i];
+        _fn(arg);
+      }
+      return target;
+    };
+
+    Util.prototype.to_hex = function(color) {
+      var b, c, g, r;
+      if (color.match(/^#?[0-9a-fA-F]{6}|[0-9a-fA-F]{3}$\/i/)) {
+        if (color.charAt(0 === '#')) {
+          return color;
+        } else {
+          return '#' + color;
+        }
+      } else if (color.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/)) {
+        c = [parseInt(RegExp.$1, 10), parseInt(RegExp.$2, 10), parseInt(RegExp.$3, 10)];
+        if (c.length === 3) {
+          r = this.zero_fill(c[0].toString(16, 2));
+          g = this.zero_fill(c[1].toString(16, 2));
+          b = this.zero_fill(c[2].toString(16, 2));
+          return '#' + r + g + b;
+        }
+      } else {
+        return false;
+      }
+    };
+
+    Util.prototype.to_rgb = function(color) {
+      var b, c, g, r;
+      if (color.match(/^rgb\(\s*\d{1,3}\s*,\s\d{1,3}\s*,\s*\d{1,3}\s*\)$/)) {
+        return color;
+      } else if (color.match(/^#?([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})([0-9a-fA-F]{1,2})$\/i/)) {
+        c = [parseInt(RegExp.$1, 16), parseInt(RegExp.$2, 16), parseInt(RegExp.$3, 16)];
+        r = c[0].toString(10);
+        g = c[1].toString(10);
+        b = c[2].toString(10);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+      } else {
+        return false;
+      }
+    };
+
+    Util.prototype.strip_script = function(link) {
+      var script;
+      if (link.match(/^javascript:(\w\W.)/ || link.match(/(\w\W.)\(\)/))) {
+        script = RegExp.$1;
+        console.log('Script stripped from link: ', script);
+        return 'javascript:void(0)';
+      } else {
+        return link;
+      }
+    };
+
+    Util.prototype.wrap = function(e, fn) {
+      var args, i;
+      i = 2;
+      if (e.preventDefault != null) {
+        e.preventDefault();
+        e.stopPropagation();
+      } else {
+        fn = e;
+        i--;
+      }
+      args = Array.prototype.slice.call(arguments, i);
+      return function() {
+        return fn.apply(this, args);
+      };
+    };
+
+    Util.prototype.zero_fill = function(num, length) {
+      return (Array(length).join('0') + num).slice(-length);
+    };
+
+    function Util() {
+      this.zero_fill = __bind(this.zero_fill, this);
+      this.strip_script = __bind(this.strip_script, this);
+      this.to_rgb = __bind(this.to_rgb, this);
+      this.to_hex = __bind(this.to_hex, this);
+      this.extend = __bind(this.extend, this);
+      this.currency = __bind(this.currency, this);
+      this.throttle = __bind(this.throttle, this);
+      this.prep_animation = __bind(this.prep_animation, this);
+      this.timestamp = __bind(this.timestamp, this);
+      this.now = __bind(this.now, this);
+      this.block = __bind(this.block, this);
+      this.unbind = __bind(this.unbind, this);
+      this.bind = __bind(this.bind, this);
+      this.is_id = __bind(this.is_id, this);
+      this.has_class = __bind(this.has_class, this);
+      this.get_offset = __bind(this.get_offset, this);
+      this.get = __bind(this.get, this);
+      this.remove = __bind(this.remove, this);
+      this.add = __bind(this.add, this);
+      this.create_doc_frag = __bind(this.create_doc_frag, this);
+      this.create_element_string = __bind(this.create_element_string, this);
+      this.filter = __bind(this.filter, this);
+      this.to_array = __bind(this.to_array, this);
+      this.in_array = __bind(this.in_array, this);
+      this.is_body = __bind(this.is_body, this);
+      this.is_empty_object = __bind(this.is_empty_object, this);
+      this.is_raw_object = __bind(this.is_raw_object, this);
+      this.is_object = __bind(this.is_object, this);
+      this.is_function = __bind(this.is_function, this);
+      this.is = __bind(this.is, this);
+      var _this = this;
+      this._state = {
+        active: null,
+        queues: {
+          fx: [],
+          dom: [],
+          handlers: {}
+        }
+      };
+      this.internal = {
+        queues: {
+          add: function(name, callback) {
+            _this._state.queues[name] = [];
+            return _this._state.queues.handlers[name] = _this.debounce(function(n, c) {
+              return _this.internal.queues.process(n, c);
+            }, _this.prep_animation().duration, true);
+          },
+          remove: function(name, callback) {
+            var handler, q;
+            handler = _this._state.queues.handlers[name];
+            delete _this._state.queues.handlers[name];
+            q = _this._state.queues[name];
+            delete _this._state.queues[name];
+            if (q.length > 0) {
+              return {
+                queue: q,
+                handler: handler
+              };
+            } else {
+              return true;
+            }
+          },
+          go: function(name, callback) {
+            return _this._state.queues.handlers[name](name, callback);
+          },
+          process: function(name, callback) {
+            var q;
+            q = _this._state.queues[name];
+            _this._state.queues[name] = [];
+            return callback != null ? callback.call(_this, {
+              queue: q,
+              name: name
+            }) : void 0;
+          }
+        }
+      };
+      this._init = function(apptools) {};
+    }
+
+    return Util;
+
+  }).call(this);
+
+  this.__apptools_preinit.abstract_base_classes.push(Util);
+
+  this.__apptools_preinit.deferred_core_modules.push({
+    module: Util
+  });
+
+  window.Util = Util = new Util();
+
   CoreDevAPI = (function(_super) {
 
     __extends(CoreDevAPI, _super);
@@ -518,6 +1041,23 @@
 
   this.__apptools_preinit.abstract_base_classes.push(CoreDevAPI);
 
+  ModelException = (function(_super) {
+
+    __extends(ModelException, _super);
+
+    function ModelException(source, message) {
+      this.source = source;
+      this.message = message;
+    }
+
+    ModelException.prototype.toString = function() {
+      return '[' + this.source + '] ModelException: ' + this.message;
+    };
+
+    return ModelException;
+
+  })(Error);
+
   CoreModelAPI = (function(_super) {
 
     __extends(CoreModelAPI, _super);
@@ -526,13 +1066,243 @@
 
     CoreModelAPI.events = [];
 
-    function CoreModelAPI(apptools, window) {}
+    function CoreModelAPI() {
+      var _this = this;
+      this.internal = {
+        block: function() {
+          var async_method, params, results, _done;
+          async_method = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+          _done = false;
+          results = null;
+          async_method.apply(null, __slice.call(params).concat([function(r) {
+            results = r;
+            return _done = true;
+          }]));
+          while (true) {
+            if (_done !== false) break;
+          }
+          return results;
+        }
+      };
+      this.put = function(object) {
+        return _this.internal.block(_this.put_async, object);
+      };
+      this.get = function(key, kind) {
+        return _this.internal.block(_this.get_async, key, kind);
+      };
+      this["delete"] = function(key, kind) {
+        return _this.internal.block(_this.delete_async, key, kind);
+      };
+      this.put_async = function(callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage.put(_this.constructor.prototype.name, callback);
+      };
+      this.get_async = function(key, callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage.get(_this.key, _this.constructor.prototype.name, callback);
+      };
+      this.delete_async = function(callback) {
+        if (callback == null) {
+          callback = function(x) {
+            return x;
+          };
+        }
+        return apptools.storage["delete"](_this.key, _this.constructor.prototype.name, callback);
+      };
+      this.all = function(callback) {
+        if (!(callback != null) || !(Util != null ? Util.is_function(callback) : void 0)) {
+          if (callback != null) {
+            throw 'Provided callback isn\'t a function. Whoops.';
+          } else {
+            throw 'all() requires a callback.';
+          }
+        } else {
+          throw 'all() currently in active development, sorry.';
+        }
+      };
+      this.register = function() {
+        return apptools.dev.verbose('CoreModelAPI', 'register() currently in active development, sorry.');
+      };
+    }
+
+    CoreModelAPI.init = function() {};
 
     return CoreModelAPI;
 
   })(CoreAPI);
 
+  Model = (function() {
+
+    Model.prototype.log = function(source, message) {
+      if (message != null) {
+        if ($.apptools != null) {
+          return $.apptools.dev.verbose(source, message);
+        } else {
+          return console.log('[' + source + ']', message);
+        }
+      } else if (source != null) {
+        message = source;
+        source = this.constructor.name;
+        return this.log(source, message);
+      } else {
+        return this.log('Model', 'No message passed to log(). (You get a log message anyway <3)');
+      }
+    };
+
+    Model.prototype.validate = function(object, cls, safe) {
+      var check, key, results, value,
+        _this = this;
+      if (cls == null) cls = object.constructor.prototype.model;
+      if (safe == null) safe = false;
+      if (object != null) {
+        if (safe) {
+          results = {};
+          check = function(k, v) {
+            if ((cls[k] != null) && (v != null) === (cls[k] != null) && v.constructor.name === cls[k].constructor.name) {
+              return results[k] = v;
+            }
+          };
+        } else {
+          results = [];
+          check = function(k, v) {
+            if (!(cls[k] != null) || (v != null) !== (cls[k] != null) || v.constructor.name !== cls[k].constructor.name) {
+              return results.push({
+                k: v
+              });
+            }
+          };
+        }
+        for (key in object) {
+          if (!__hasProp.call(object, key)) continue;
+          value = object[key];
+          check(key, value);
+        }
+        if (safe) return results;
+        return results.length === 0;
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to validate().');
+      }
+    };
+
+    Model.prototype.from_message = function(object, message, strict) {
+      var cached_obj, modsafe, p, prop, v, val;
+      if (message == null) message = {};
+      if (strict == null) strict = false;
+      if (object != null) {
+        cached_obj = object;
+        this.log('Validating incoming RPC update...');
+        if (this.validate(message, object.constructor.prototype.model)) {
+          for (prop in message) {
+            if (!__hasProp.call(message, prop)) continue;
+            val = message[prop];
+            object[prop] = val;
+          }
+          this.log('Valid model matched. Returning updated object...');
+          return object;
+        } else {
+          this.log('Strict validation failed.');
+          if (!strict) {
+            this.log('Nonstrict validation allowed, trying modelsafe conversion...');
+            modsafe = this.validate(message, object.constructor.prototype.model, true);
+            if (Util.is_empty_object(modsafe)) {
+              this.log('No modelsafe properties found, canceling update...');
+              return cached_obj;
+            } else {
+              for (p in modsafe) {
+                if (!__hasProp.call(modsafe, p)) continue;
+                v = modsafe[p];
+                object[p] = v;
+              }
+              this.log('Modelsafe conversion succeeded! Returning updated object...');
+              return object;
+            }
+          } else {
+            this.log('Strict validation only, canceling update...');
+            return cached_obj;
+          }
+        }
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to from_message().');
+      }
+    };
+
+    Model.prototype.to_message = function(object) {
+      var message, prop, val;
+      if (object != null) {
+        message = {};
+        for (prop in object) {
+          if (!__hasProp.call(object, prop)) continue;
+          val = object[prop];
+          if ((object.constructor.prototype.model[prop] != null) && typeof val !== 'function') {
+            message[prop] = val;
+          }
+        }
+        return message;
+      } else {
+        throw new ModelException(this.constructor.name, 'No object passed to to_message().');
+      }
+    };
+
+    function Model(key) {
+      this.to_message = __bind(this.to_message, this);
+      this.from_message = __bind(this.from_message, this);
+      this.validate = __bind(this.validate, this);
+      this.log = __bind(this.log, this);
+      var prop, val,
+        _this = this;
+      if (Util.is_raw_object(key)) {
+        for (prop in key) {
+          val = key[prop];
+          this[prop] = val;
+        }
+      } else {
+        this.key = key;
+      }
+      this.from_message = function(message, strict) {
+        return _this.constructor.prototype.from_message(_this, message, strict);
+      };
+      this.to_message = function() {
+        return _this.constructor.prototype.to_message(_this);
+      };
+      this.log = function(message) {
+        return _this.constructor.prototype.log(_this.constructor.name, message);
+      };
+    }
+
+    /*
+    
+        # methods are placeholders for now :)
+    
+        # synchronous methods
+        put: (args...) => $.apptools.model.put(@, args...)
+        get: (args...) => $.apptools.model.get(@, args...)
+        delete: (args...) => $.apptools.model.delete(@, args...)
+    
+        # asynchronous methods - tentative until params finalized
+        put_async: (args...) => $.apptools.model.put_async(@, args...)
+        get_async: (args...) => $.apptools.model.get_async(@, args...)
+        delete_async: (args...) => $.apptools.model.delete_async(@, args...)
+    
+        all: (args...) => $.apptools.model.all(@, args...)
+    
+        render: (template) =>
+    */
+
+    return Model;
+
+  })();
+
   this.__apptools_preinit.abstract_base_classes.push(CoreModelAPI);
+
+  this.__apptools_preinit.abstract_base_classes.push(Model);
 
   CoreEventsAPI = (function(_super) {
 
@@ -908,13 +1678,354 @@
 
   this.__apptools_preinit.abstract_base_classes.push(CoreDispatchAPI);
 
+  StorageDriver = (function(_super) {
+
+    __extends(StorageDriver, _super);
+
+    StorageDriver.methods = ['compatible', 'construct'];
+
+    StorageDriver["export"] = "public";
+
+    function StorageDriver() {}
+
+    return StorageDriver;
+
+  })(CoreInterface);
+
+  this.compatible = function() {};
+
+  this.construct = function() {};
+
+  StorageAdapter = (function(_super) {
+
+    __extends(StorageAdapter, _super);
+
+    StorageAdapter.methods = ['get', 'put', 'delete', 'clear', 'get_async', 'put_async', 'delete_async', 'clear_async'];
+
+    StorageAdapter["export"] = "public";
+
+    function StorageAdapter() {
+      return;
+    }
+
+    return StorageAdapter;
+
+  })(CoreInterface);
+
+  KeyEncoder = (function(_super) {
+
+    __extends(KeyEncoder, _super);
+
+    KeyEncoder.methods = ['build_key', 'encode_key', 'build_cluster', 'encode_cluster'];
+
+    KeyEncoder["export"] = "public";
+
+    function KeyEncoder() {
+      return;
+    }
+
+    return KeyEncoder;
+
+  })(CoreInterface);
+
+  if (this.__apptools_preinit != null) {
+    if (!(this.__apptools_preinit.abstract_base_classes != null)) {
+      this.__apptools_preinit.abstract_base_classes = [];
+    }
+    if (!(this.__apptools_preinit.deferred_core_modules != null)) {
+      this.__apptools_preinit.deferred_core_modules = [];
+    }
+  } else {
+    this.__apptools_preinit = {
+      abstract_base_classes: [],
+      deferred_core_modules: []
+    };
+  }
+
+  this.__apptools_preinit.detected_storage_engines = [];
+
+  this.__apptools_preinit.abstract_base_classes.push(StorageDriver);
+
+  this.__apptools_preinit.abstract_base_classes.push(StorageAdapter);
+
+  this.__apptools_preinit.abstract_feature_interfaces.push({
+    adapter: StorageDriver,
+    name: "storage"
+  });
+
+  SimpleKeyEncoder = (function(_super) {
+
+    __extends(SimpleKeyEncoder, _super);
+
+    function SimpleKeyEncoder() {
+      var _this = this;
+      this.build_key = function() {};
+      this.encode_key = function() {};
+      this.build_cluster = function() {};
+      this.encode_cluster = function() {};
+    }
+
+    return SimpleKeyEncoder;
+
+  })(KeyEncoder);
+
+  _simple_key_encoder = new SimpleKeyEncoder();
+
+  /* === DOM Storage Engines ===
+  */
+
+  LocalStorageEngine = (function(_super) {
+
+    __extends(LocalStorageEngine, _super);
+
+    LocalStorageEngine._state = {
+      runtime: {
+        count: {
+          total_keys: 0,
+          by_kind: []
+        }
+      }
+    };
+
+    function LocalStorageEngine(name) {
+      var _this = this;
+      this.name = name;
+      this.get_async = function(key, callback) {
+        var object;
+        return callback.call(object = _this.get(key));
+      };
+      this.put_async = function(key, value, callback) {
+        _this.put(key, value);
+        return callback.call(value);
+      };
+      this.delete_async = function(key, callback) {
+        _this["delete"](key);
+        return callback.call(_this);
+      };
+      this.clear_async = function(callback) {
+        _this.clear();
+        return callback.call(_this);
+      };
+      this.get = function(key) {
+        return localStorage.getItem(key);
+      };
+      this.put = function(key, value) {
+        if (!(_this.get(key) != null)) _this._state.runtime.count.total_keys++;
+        return localStorage.setItem(key, value);
+      };
+      this["delete"] = function(key) {
+        _this._state.runtime.count.total_keys--;
+        return localStorage.removeItem(key);
+      };
+      this.clear = function() {
+        _this._state.runtime.count.total_keys = 0;
+        return localStorage.clear();
+      };
+      return;
+    }
+
+    return LocalStorageEngine;
+
+  })(StorageAdapter);
+
+  SessionStorageEngine = (function(_super) {
+
+    __extends(SessionStorageEngine, _super);
+
+    SessionStorageEngine._state = {
+      runtime: {
+        count: {
+          total_keys: 0,
+          by_kind: []
+        }
+      }
+    };
+
+    function SessionStorageEngine(name) {
+      var _this = this;
+      this.name = name;
+      this.get_async = function(key, callback) {
+        var object;
+        return callback.call(object = _this.get(key));
+      };
+      this.put_async = function(key, value, callback) {
+        _this.put(key, value);
+        return callback.call(value);
+      };
+      this.delete_async = function(key, callback) {
+        _this["delete"](key);
+        return callback.call(_this);
+      };
+      this.clear_async = function(callback) {
+        _this.clear();
+        return callback.call(_this);
+      };
+      this.get = function(key) {
+        return sessionStorage.getItem(key);
+      };
+      this.put = function(key, value) {
+        if (!(_this.get(key) != null)) _this._state.runtime.count.total_keys++;
+        return sessionStorage.setItem(key, value);
+      };
+      this["delete"] = function(key) {
+        _this._state.runtime.count.total_keys--;
+        return sessionStorage.removeItem(key);
+      };
+      this.clear = function() {
+        _this._state.runtime.count.total_keys = 0;
+        return sessionStorage.clear();
+      };
+      return;
+    }
+
+    return SessionStorageEngine;
+
+  })(StorageAdapter);
+
+  /* === DOM Storage Drivers ===
+  */
+
+  LocalStorageDriver = (function(_super) {
+
+    __extends(LocalStorageDriver, _super);
+
+    function LocalStorageDriver() {
+      LocalStorageDriver.__super__.constructor.apply(this, arguments);
+    }
+
+    LocalStorageDriver._state = {
+      constructor: function() {
+        var _this = this;
+        this.compatible = function() {
+          return !!window.localStorage;
+        };
+        this.construct = function(name) {
+          var new_engine;
+          if (name == null) name = 'appstorage';
+          if (_this.compatible()) {
+            return new_engine = new LocalStorageEngine(name);
+          } else {
+            return false;
+          }
+        };
+      }
+    };
+
+    return LocalStorageDriver;
+
+  })(StorageDriver);
+
+  SessionStorageDriver = (function(_super) {
+
+    __extends(SessionStorageDriver, _super);
+
+    function SessionStorageDriver() {
+      SessionStorageDriver.__super__.constructor.apply(this, arguments);
+    }
+
+    SessionStorageDriver._state = {
+      constructor: function() {
+        var _this = this;
+        this.compatible = function() {
+          return !!window.sessionStorage;
+        };
+        this.construct = function(name) {
+          var new_engine;
+          if (name == null) name = 'appstorage';
+          if (_this.compatible()) {
+            return new_engine = new SessionStorageEngine(name);
+          } else {
+            return false;
+          }
+        };
+      }
+    };
+
+    return SessionStorageDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "LocalStorage",
+    adapter: LocalStorageEngine,
+    driver: LocalStorageDriver,
+    key_encoder: _simple_key_encoder
+  });
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "SessionStorage",
+    adapter: SessionStorageEngine,
+    driver: SessionStorageDriver,
+    key_encoder: _simple_key_encoder
+  });
+
+  IndexedDBEngine = (function(_super) {
+
+    __extends(IndexedDBEngine, _super);
+
+    function IndexedDBEngine() {
+      return;
+    }
+
+    return IndexedDBEngine;
+
+  })(StorageAdapter);
+
+  IndexedDBDriver = (function(_super) {
+
+    __extends(IndexedDBDriver, _super);
+
+    function IndexedDBDriver() {
+      return;
+    }
+
+    return IndexedDBDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "IndexedDB",
+    adapter: IndexedDBEngine,
+    driver: IndexedDBDriver
+  });
+
+  WebSQLEngine = (function(_super) {
+
+    __extends(WebSQLEngine, _super);
+
+    function WebSQLEngine() {
+      return;
+    }
+
+    return WebSQLEngine;
+
+  })(StorageAdapter);
+
+  WebSQLDriver = (function(_super) {
+
+    __extends(WebSQLDriver, _super);
+
+    function WebSQLDriver() {
+      return;
+    }
+
+    return WebSQLDriver;
+
+  })(StorageDriver);
+
+  this.__apptools_preinit.detected_storage_engines.push({
+    name: "WebSQL",
+    adapter: WebSQLEngine,
+    driver: WebSQLDriver
+  });
+
   CoreStorageAPI = (function(_super) {
 
     __extends(CoreStorageAPI, _super);
 
     CoreStorageAPI.mount = 'storage';
 
-    CoreStorageAPI.events = ['STORAGE_INIT', 'STORAGE_READY', 'STORAGE_ERROR', 'STORAGE_ACTIVITY', 'STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE', 'COLLECTION_SCAN', 'COLLECTION_CREATE', 'COLLECTION_DESTROY', 'COLLECTION_UPDATE', 'COLLECTION_SYNC'];
+    CoreStorageAPI.events = ['STORAGE_INIT', 'ENGINE_LOADED', 'STORAGE_READY', 'STORAGE_ERROR', 'STORAGE_ACTIVITY', 'STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE', 'COLLECTION_SCAN', 'COLLECTION_CREATE', 'COLLECTION_DESTROY', 'COLLECTION_UPDATE', 'COLLECTION_SYNC'];
 
     function CoreStorageAPI(apptools, window) {
       var _this = this;
@@ -939,7 +2050,10 @@
             enabled: false,
             interval: 120
           },
-          adapters: {},
+          drivers: [],
+          engines: {},
+          encrypt: false,
+          integrity: false,
           obfuscate: false,
           local_only: false,
           callbacks: {
@@ -955,7 +2069,31 @@
       this.internal = {
         check_support: function(modernizr) {},
         bootstrap: function(lawnchair) {},
-        provision_collection: function(name, adapter, callback) {}
+        provision_collection: function(name, adapter, callback) {},
+        add_storage_engine: function(name, driver, engine) {
+          var d, e;
+          try {
+            d = new driver(apptools);
+            e = new engine(apptools);
+          } catch (err) {
+            return false;
+          }
+          if (e.compatible()) {
+            _this._state.config.engines[name] = e;
+            driver.adapter = _this._state.config.engines[name];
+            _this._state.config.drivers.push(driver);
+            apptools.sys.drivers.install('storage', name, d, (d.enabled != null) | true, (d.priority != null) | 50, function(driver) {
+              return apptools.events.trigger('ENGINE_LOADED', {
+                driver: driver,
+                engine: driver.adapter
+              });
+            });
+            return true;
+          } else {
+            apptools.dev.verbose('StorageEngine', 'Detected incompatible storage engine. Skipping.', name, driver, engine);
+            return false;
+          }
+        }
       };
       this.get = function() {};
       this.list = function() {};
@@ -965,8 +2103,16 @@
       this["delete"] = function() {};
       this.sync = function() {};
       this._init = function() {
-        apptools.dev.verbose('Storage', 'Storage support is currently stubbed.');
+        var engine, _i, _len, _ref, _ref2, _ref3;
         apptools.events.trigger('STORAGE_INIT');
+        apptools.dev.verbose('Storage', 'Storage support is currently under construction.');
+        if (((_ref = apptools.sys) != null ? (_ref2 = _ref.preinit) != null ? _ref2.detected_storage_engines : void 0 : void 0) != null) {
+          _ref3 = apptools.sys.preinit.detected_storage_engines;
+          for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
+            engine = _ref3[_i];
+            _this.internal.add_storage_engine(engine.name, engine.driver, engine.adapter);
+          }
+        }
         return apptools.events.trigger('STORAGE_READY');
       };
       apptools.events.bridge(['STORAGE_READ', 'STORAGE_WRITE', 'STORAGE_DELETE'], 'STORAGE_ACTIVITY');
@@ -977,30 +2123,7 @@
 
   })(CoreAPI);
 
-  StorageDriver = (function(_super) {
-
-    __extends(StorageDriver, _super);
-
-    StorageDriver.methods = [];
-
-    StorageDriver["export"] = "private";
-
-    function StorageDriver() {
-      return;
-    }
-
-    return StorageDriver;
-
-  })(CoreInterface);
-
-  this.__apptools_preinit.abstract_base_classes.push(StorageDriver);
-
   this.__apptools_preinit.abstract_base_classes.push(CoreStorageAPI);
-
-  this.__apptools_preinit.abstract_feature_interfaces.push({
-    adapter: StorageDriver,
-    name: "storage"
-  });
 
   RPCAPI = (function(_super) {
 
@@ -1073,7 +2196,7 @@
         agent: {}
       };
       this.ajax = {
-        accepts: 'application/json',
+        accept: 'application/json',
         async: true,
         cache: true,
         global: true,
@@ -1272,15 +2395,6 @@
           }
         }
       };
-      if (apptools.sys.libraries.resolve('jQuery') !== false) {
-        $.ajaxSetup({
-          global: true,
-          xhr: function() {
-            return _this.internals.transports.xhr.factory();
-          },
-          headers: this.internals.config.headers
-        });
-      }
       this.rpc = {
         lastRequest: null,
         lastFailure: null,
@@ -1289,8 +2403,19 @@
         action_prefix: null,
         alt_push_response: false,
         used_ids: [],
-        factory: function(name, base_uri, methods, config) {
-          return apptools.api[name] = new RPCAPI(name, base_uri, methods, config);
+        factory: function(name_or_apis, base_uri, methods, config) {
+          var item, name, _i, _len;
+          if (Util.is_array(name_or_apis)) {
+            if (name_or_apis != null) {
+              for (_i = 0, _len = name_or_apis.length; _i < _len; _i++) {
+                item = name_or_apis[_i];
+                apptools.api[(name = item.name)] = new RPCAPI(name, item.base_uri, item.methods, item.config);
+              }
+            }
+          } else {
+            apptools.api[(name = name_or_apis)] = new RPCAPI(name, base_uri, methods, config);
+          }
+          return _this;
         },
         _assembleRPCURL: function(method, api, prefix, base_uri) {
           if (!(api != null) && !(base_uri != null)) {
@@ -1349,6 +2474,18 @@
           var context;
           if (transport == null) transport = 'xhr';
           apptools.dev.verbose('RPC', 'Fulfill', config, request, callbacks);
+          if (apptools.sys.libraries.resolve('jQuery') !== false) {
+            $.ajaxSetup({
+              type: 'POST',
+              accepts: 'application/json',
+              contentType: 'application/json',
+              global: true,
+              xhr: function() {
+                return _this.internals.transports.xhr.factory();
+              },
+              headers: _this.internals.config.headers
+            });
+          }
           _this.rpc.lastRequest = request;
           _this.rpc.history[request.envelope.id] = {
             request: request,
@@ -1848,6 +2985,23 @@
 
   })(CoreInterface);
 
+  Template = (function(_super) {
+
+    __extends(Template, _super);
+
+    function Template() {
+      this.name = '';
+      this.source = '';
+      this.cacheable = {
+        rendered: false,
+        source: false
+      };
+    }
+
+    return Template;
+
+  })(Model);
+
   this.__apptools_preinit.abstract_base_classes.push(QueryDriver);
 
   this.__apptools_preinit.abstract_base_classes.push(RenderDriver);
@@ -1857,873 +3011,6 @@
   this.__apptools_preinit.abstract_feature_interfaces.push({
     adapter: RenderDriver,
     name: "render"
-  });
-
-  CoreWidgetAPI = (function(_super) {
-
-    __extends(CoreWidgetAPI, _super);
-
-    function CoreWidgetAPI() {
-      CoreWidgetAPI.__super__.constructor.apply(this, arguments);
-    }
-
-    CoreWidgetAPI.mount = 'widget';
-
-    CoreWidgetAPI.events = [];
-
-    CoreWidgetAPI.prototype._init = function(apptools) {
-      apptools.sys.state.add_flag('widgets');
-      apptools.dev.verbose('CoreWidget', 'Widget functionality is currently stubbed.');
-    };
-
-    return CoreWidgetAPI;
-
-  })(CoreAPI);
-
-  CoreWidget = (function(_super) {
-
-    __extends(CoreWidget, _super);
-
-    function CoreWidget() {
-      CoreWidget.__super__.constructor.apply(this, arguments);
-    }
-
-    return CoreWidget;
-
-  })(CoreObject);
-
-  if (this.__apptools_preinit != null) {
-    if (!(this.__apptools_preinit.abstract_base_classes != null)) {
-      this.__apptools_preinit.abstract_base_classes = [];
-    }
-    if (!(this.__apptools_preinit.deferred_core_modules != null)) {
-      this.__apptools_preinit.deferred_core_modules = [];
-    }
-  } else {
-    this.__apptools_preinit = {
-      abstract_base_classes: [],
-      deferred_core_modules: []
-    };
-  }
-
-  this.__apptools_preinit.abstract_base_classes.push(CoreWidget);
-
-  this.__apptools_preinit.abstract_base_classes.push(CoreWidgetAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: CoreWidgetAPI
-  });
-
-  CoreAdminAPI = (function(_super) {
-
-    __extends(CoreAdminAPI, _super);
-
-    function CoreAdminAPI() {
-      this._init = __bind(this._init, this);
-      CoreAdminAPI.__super__.constructor.apply(this, arguments);
-    }
-
-    CoreAdminAPI.mount = 'admin';
-
-    CoreAdminAPI.events = [];
-
-    CoreAdminAPI.prototype._init = function(apptools) {
-      apptools.sys.state.add_flag('admin');
-      apptools.dev.log('AdminAPI', 'NOTICE: Admin APIs are enabled.');
-    };
-
-    return CoreAdminAPI;
-
-  })(CoreAPI);
-
-  if (this.__apptools_preinit != null) {
-    if (!(this.__apptools_preinit.abstract_base_classes != null)) {
-      this.__apptools_preinit.abstract_base_classes = [];
-    }
-    if (!(this.__apptools_preinit.deferred_core_modules != null)) {
-      this.__apptools_preinit.deferred_core_modules = [];
-    }
-  } else {
-    this.__apptools_preinit = {
-      abstract_base_classes: [],
-      deferred_core_modules: []
-    };
-  }
-
-  this.__apptools_preinit.abstract_base_classes.push(CoreAdminAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: CoreAdminAPI
-  });
-
-  BlogManagerAPI = (function(_super) {
-
-    __extends(BlogManagerAPI, _super);
-
-    BlogManagerAPI.mount = 'blog';
-
-    BlogManagerAPI.events = [];
-
-    function BlogManagerAPI(apptools, admin_api) {
-      apptools.dev.verbose('BlogManager', 'AppToolsXMS BlogManager is currently stubbed.');
-    }
-
-    return BlogManagerAPI;
-
-  })(CoreAdminAPI);
-
-  this.__apptools_preinit.abstract_base_classes.push(BlogManagerAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: BlogManagerAPI,
-    package: 'admin'
-  });
-
-  PageManagerAPI = (function(_super) {
-
-    __extends(PageManagerAPI, _super);
-
-    PageManagerAPI.mount = 'page';
-
-    PageManagerAPI.events = ['PAGE_EDIT', 'PAGE_SAVE', 'PAGE_META_SAVE'];
-
-    function PageManagerAPI(apptools, admin, window) {
-      apptools.dev.verbose('PageManager', 'AppToolsXMS PageManager is currently stubbed.');
-    }
-
-    return PageManagerAPI;
-
-  })(CoreAdminAPI);
-
-  this.__apptools_preinit.abstract_base_classes.push(PageManagerAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: PageManagerAPI,
-    package: 'admin'
-  });
-
-  SiteManagerAPI = (function(_super) {
-
-    __extends(SiteManagerAPI, _super);
-
-    SiteManagerAPI.mount = 'site';
-
-    SiteManagerAPI.events = ['SITE_EDIT', 'SITE_SAVE', 'SITE_META_SAVE'];
-
-    function SiteManagerAPI(apptools, admin, window) {
-      apptools.dev.verbose('SiteManager', 'AppToolsXMS SiteManager is currently stubbed.');
-    }
-
-    return SiteManagerAPI;
-
-  })(CoreAdminAPI);
-
-  this.__apptools_preinit.abstract_base_classes.push(SiteManagerAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: SiteManagerAPI,
-    package: 'admin'
-  });
-
-  ContentManagerAPI = (function(_super) {
-
-    __extends(ContentManagerAPI, _super);
-
-    ContentManagerAPI.mount = 'content';
-
-    ContentManagerAPI.events = [];
-
-    function ContentManagerAPI(apptools, admin, window) {
-      var change_count, editing, features, state, style_cache, that,
-        _this = this;
-      editing = false;
-      style_cache = {};
-      state = {};
-      change_count = 0;
-      features = {
-        panel: {
-          commands: {
-            undo: function() {
-              return document.execCommand('undo');
-            },
-            redo: function() {
-              return document.execCommand('redo');
-            },
-            cut: function() {
-              return document.execCommand('cut');
-            },
-            paste: function() {
-              return document.execCommand('paste');
-            },
-            table: function() {
-              return document.execCommand('enableInlineTableEditing');
-            },
-            resize: function() {
-              return document.execCommand('enableObjectResizing');
-            },
-            clip: null,
-            b: function() {
-              return document.execCommand('bold');
-            },
-            u: function() {
-              return document.execCommand('underline');
-            },
-            i: function() {
-              return document.execCommand('italic');
-            },
-            clear: function() {
-              return document.execCommand('removeFormat');
-            },
-            h1: function() {
-              var t;
-              t = document.selection ? document.selection() : window.getSelection();
-              return document.execCommand('insertHTML', false, '<h1 class="h1">' + String(t) + '</h1>');
-            },
-            h2: function() {
-              var t;
-              t = document.selection ? document.selection() : window.getSelection();
-              return document.execCommand('insertHTML', false, '<h2 class="h2">' + String(t) + '</h2>');
-            },
-            h3: function() {
-              var t;
-              t = document.selection ? document.selection() : window.getSelection();
-              return document.execCommand('insertHTML', false, '<h3 class="h3">' + String(t) + '</h3>');
-            },
-            fontColor: function() {
-              var c, t;
-              t = document.selection ? document.selection() : window.getSelection();
-              c = prompt('Please enter a hexidecimal color value (i.e. #ffffff)');
-              c = c[0] === '#' ? c : '#' + c;
-              return document.execCommand('insertHTML', false, '<span style="color:' + c + ';">' + t + '</span>');
-            },
-            fontSize: function() {
-              var s, t;
-              t = document.selection ? document.selection() : window.getSelection();
-              s = prompt('Please enter desired point size (i.e. 10)');
-              return document.execCommand('insertHTML', false, '<span style="font-size:' + s + 'pt;">' + t + '</span>');
-            },
-            fontFace: null,
-            l: function() {
-              return document.execCommand('justifyLeft');
-            },
-            r: function() {
-              return document.execCommand('justifyRight');
-            },
-            c: function() {
-              return document.execCommand('justifyCenter');
-            },
-            "in": function() {
-              return document.execCommand('indent');
-            },
-            out: function() {
-              return document.execCommand('outdent');
-            },
-            bullet: function() {
-              return document.execCommand('insertUnorderedList');
-            },
-            number: function() {
-              return document.execCommand('insertOrderedList');
-            },
-            indentSpecial: null,
-            lineSpacing: null,
-            link: function() {
-              var l, t;
-              t = document.selection ? document.selection() : window.getSelection();
-              if (!util.is(t)) {
-                t = prompt("What link text do you want to display?");
-              }
-              l = prompt('What URL do you want to link to?');
-              return document.execCommand('insertHTML', false, '<a href="' + l + '">' + t + '</a>');
-            },
-            image: null,
-            video: null
-          },
-          panel_html: ['<div id="CMS_wrap">', '<div id="CMS_panel" class="fixed panel" style="opacity: 0;">', '<div id="CMS_frame" class="nowrap">', '<div class="cms_pane" id="buttons">', '<div class="cms_subpane">', '<h1 class="cms_sp">editing</h1>', '<p>', '<button id="cms_undo" value="undo">undo</button>', '<button id="cms_redo" value="redo">redo</button>', '<button id="cms_cut" value="cut">cut</button>', '<button id="cms_paste" value="paste">paste</button>', '</p>', '</div>', '<hr/>', '<div class="cms_subpane">', '<h1 class="cms_sp">typography</h1>', '<p>', '<select id="cms_headers" class="cms">', '<option id="cms_h1" class="h1">Heading 1</option>', '<option id="cms_h2" class="h2">Heading 2</option>', '<option id="cms_h3" class="h3">Heading 3</option>', '</select>', '<button id="cms_b" value="bold">B</button>', '<button id="cms_u" value="underline">U</button>', '<button id="cms_i" value="italic">I</button>', '<button id="cms_clear" value="clear formatting">clear</button>', '<button id="cms_fontColor" value="font color">font color</button>', '<button id="cms_fontSize" value="font size">font size</button>', '</p>', '</div>', '<hr/>', '<div class="cms_subpane">', '<h1 class="cms_sp">alignment</h1>', '<p style="text-lign:center">', '<button id="cms_l" value="left">left</button>', '<button id="cms_c" value="center">center</button>', '<button id="cms_r" value="right">right</button>', '<br>', '<button id="cms_in" value="indent">&raquo;</button>', '<button id="cms_out" value="outdent">&laquo;</button>', '<br>', '<button id="cms_ul" value="unordered list">&lt;ul&gt;</button>', '<button id="cms_ol" value="ordered list">&lt;ol&gt;</button>', '</p>', '</div>', '<hr/>', '<div class="cms_subpane">', '<h1 class="cms_sp">interactive</h1>', '<p>', '<button id="cms_link" value="link">add link</button>', '</p>', '</div>', '</div>', '<div class="cms_pane" id="styles">', '<div class="cms_subpane">', '<h1 class="cms_sp">styles</h1>', '<p>MIDDLE</p>', '</div>', '</div>', '<div class="cms_pane" id="assets">', '<div class="cms_subpane">', '<h1 class="cms_sp">drop files here</h1>', '<div id="upload_wrap">', '<div id="upload" class="dragdrop">', '<span class="center-text" id="up_content">+</span>', '</div>', '</div>', '</div>', '<hr>', '<div class="cms_subpane">', '<h1 class="cms_sp">uploaded assets</h1>', '<p>', '<button id="pop_assets_button" class="pop" name="assets" value="pop out this pane!">pop me out</button>', '</p>', '</div>', '</div>', '</div>', '<div id="CMS_nav">', '<a class="scroll" href="#buttons">buttons</a>', '<a class="scroll" href="#styles">styles</a>', '<a class="scroll" href="#assets">assets</a>', '</div>', '<div id="CMS_panel_footer">&copy; momentum labs 2012</div>', '</div>', '</div>'].join('\n'),
-          status_html: '<div class="fixed panel bigger" id="cms_edit_on" style="vertical-align: middle; left: -305px;top: 50px;width: 300px;text-align: right;padding-right: 10px;opacity: 0;"><span id="cms_span" style="color: #222;cursor: pointer">content editing <span style="color: green;font-weight: bold;">ON</span></span></div>',
-          init: false
-        },
-        scroller: {
-          animation: {
-            duration: 500,
-            easing: 'easeInOutExpo',
-            complete: null
-          },
-          axis: 'horizontal',
-          frame: 'CMS_frame',
-          init: false
-        },
-        pop: {
-          animation: {
-            duration: 500,
-            easing: 'easeInOutExpo',
-            complete: null
-          },
-          position: {
-            bottom: '60px',
-            right: '60px'
-          },
-          init: false
-        },
-        modal: {
-          animation: {
-            duration: 400,
-            easing: 'easeInOutExpo',
-            complete: null
-          },
-          initial: {
-            width: '0px',
-            height: '0px',
-            top: window.innerHeight / 2 + 'px',
-            left: window.innerWidth / 2 + 'px'
-          },
-          ratio: {
-            x: 0.4,
-            y: 0.4
-          },
-          html: ['<div id="modal_wrap" style="opacity: 0;" class="modal_wrap">', '<div id="modal" style="opacity: 0;" class="fixed modal">', '<div id="modal_status"></div>', '<div id="modal_content">', '*****', '</div>', '<div id="modal_ui"><button id="mod-close">close</button></div>', '</div>', '</div>'].join('\n'),
-          content: '<span style="font-size: 25px;margin: 10px auto;color: #5f5f5f;font-weight:bold">hello, lightbox!</span>',
-          rounded: true,
-          init: false
-        },
-        overlay: '<div id="m-overlay" class="fixed" style="opacity: 0;"></div>',
-        init: false
-      };
-      this.config = $.extend(true, {}, features);
-      this.util = {
-        bind: function(obje, eve, fnc) {
-          var rObj;
-          rObj = {};
-          rObj[eve] = fnc;
-          return obje.bind(rObj);
-        },
-        imgPreview: function(eV) {
-          var img, res;
-          res = eV.target.result;
-          img = document.createElement('img');
-          img.classList.add('preview');
-          img.src = res;
-          return document.getElementById('upload').appendChild(img);
-        },
-        is: function(thing) {
-          if ($.inArray(thing, [false, null, NaN, void 0, 0, {}, [], '', 'false', 'False', 'null', 'NaN', 'undefined', '0', 'none', 'None']) === -1) {
-            return true;
-          } else {
-            return false;
-          }
-        },
-        isID: function(str) {
-          if (String(str).split('')[0] === '#' || document.getElementById(str) !== null) {
-            return true;
-          } else {
-            return false;
-          }
-        },
-        handleDrag: function(evE) {
-          var eT;
-          e.preventDefault();
-          e.stopPropagation();
-          eT = e.target;
-          if (e.type === 'dragenter') {
-            return $(eT).addClass('hover');
-          } else if (e.type !== 'dragover') {
-            return $(eT).removeClass('hover');
-          }
-        },
-        makeDragDrop: function(elem) {
-          elem.addEventListener('dragenter', _this.util.handleDrag, false);
-          elem.addEventListener('dragexit', _this.util.handleDrag, false);
-          elem.addEventListener('dragleave', _this.util.handleDrag, false);
-          elem.addEventListener('dragover', _this.util.handleDrag, false);
-          return elem.addEventListener('drop', _this.uploadAsset, false);
-        },
-        wrap: function(func) {
-          var args;
-          args = Array.prototype.slice.call(arguments, 1);
-          return function() {
-            return func.apply(this, args);
-          };
-        }
-      };
-      this.edit = function(o) {
-        var $id, $o, offset;
-        $o = $(o);
-        offset = $o.offset();
-        $id = $o.attr('id');
-        console.log('Enabling inline editing of #' + $id);
-        o.contentEditable = true;
-        editing = true;
-        style_cache[$id] = $o.attr('style');
-        state[$id] = $o.html();
-        $o.unbind('click');
-        $('body').append(_this.config.overlay);
-        $('#m-overlay').animate({
-          'opacity': 0.75
-        }, {
-          duration: 400,
-          easing: 'easeInOutExpo'
-        });
-        $o.css({
-          'z-index': function() {
-            var z;
-            return z = 900 + Math.floor(Math.random() * 81);
-          }
-        });
-        $o.offset(offset);
-        if (!_this.util.isID('CMS_panel')) {
-          _this.panel.make();
-          _this.panel.live();
-        }
-        return $('#m-overlay').bind({
-          click: _this.util.wrap(_this.save, o)
-        });
-      };
-      this.save = function(ob) {
-        var $id, $kn, $o, inHTML, that;
-        $o = $(ob);
-        $id = $o.attr('id');
-        inHTML = $o.html();
-        $kn = $o.data('snippet-keyname') ? $o.data('snippet-keyname') : 'default-key';
-        that = _this;
-        ob.contentEditable = false;
-        editing = false;
-        _this.panel.destroy();
-        _this.util.bind($o, 'click', _this.util.wrap(_this.edit, ob));
-        if (!_this.util.isID('CMS_sync')) {
-          $('body').append('<div class="cms_message warn" id="CMS_sync" style="top: 50px;opacity: 0;"><div id="sync_loader" class="loader">syncing changes...</div></div>');
-        }
-        return $('#m-overlay').animate({
-          'opacity': 0
-        }, {
-          duration: 500,
-          easing: 'easeInOutExpo',
-          complete: function() {
-            $('#m-overlay').remove();
-            if (inHTML !== state[$id]) {
-              return $('#CMS_sync').animate({
-                'opacity': 1
-              }, {
-                duration: 700,
-                easing: 'easeInOutExpo',
-                complete: function() {
-                  change_count++;
-                  return that.sync({
-                    snippet_keyname: $kn,
-                    inner_html: inHTML
-                  });
-                }
-              });
-            }
-          }
-        });
-      };
-      this.sync = function(snippetObj) {
-        var that;
-        that = _this;
-        $.apptools.dev.verbose('CMS', 'Initiating sync operation for snippet.', snippetObj);
-        return $.apptools.api.content.save_snippet(snippetObj).fulfill({
-          success: function() {
-            if (change_count - 1 === 0) {
-              $('#CMS_sync').html('changes saved!');
-              $('#CMS_sync').removeClass('warn').removeClass('error').addClass('yay');
-              setTimeout(function() {
-                return $('#CMS_sync').animate({
-                  'opacity': 0
-                }, {
-                  duration: 500,
-                  easing: 'easeInOutExpo',
-                  complete: function() {
-                    return $('#CMS_sync').remove();
-                  }
-                });
-              }, 700);
-              return change_count--;
-            } else {
-              return change_count--;
-            }
-          },
-          failure: function(error) {
-            $('#CMS_sync').html('error syncing page.');
-            $('#CMS_sync').removeClass('warn').addClass('error');
-            return setTimeout(function() {
-              $('#CMS_sync').append('<br><a id="sync_retry" style="pointer: cursor;text-decoration: underline;">retry sync</a>');
-              return that.util.bind($('#sync_retry'), 'click', that.util.wrap(that.sync, snippetObj));
-            }, 1500);
-          }
-        });
-      };
-      this.revert = function(obj) {
-        var _kn;
-        _kn = $(obj).data('snippet-keyname');
-        return $.apptools.api.content.revert_snippet({
-          snippet_keyname: _kn
-        }).fulfill({
-          success: function() {
-            $(_o).html(response.inner_html);
-            $('body').append('div id="CMS_revert" class="cms_message yay" style="opacity: 0;">changes reverted!</div>');
-            return $('#CMS_revert').animate({
-              'opacity': 1
-            }, {
-              duration: 400,
-              easing: 'easeInOutExpo',
-              complete: function() {
-                return setTimeout(function() {
-                  return $('#CMS_revert').animate({
-                    'opacity': 0
-                  }, {
-                    duration: 500,
-                    easing: 'easeInOutExpo',
-                    complete: function() {
-                      return $('#CMS_revert').remove();
-                    }
-                  });
-                }, 700);
-              }
-            });
-          },
-          failure: function(error) {
-            $('#CMS_revert').html('error reverting page.');
-            return $('#CMS_revert').removeClass('warn').addClass('error');
-          }
-        });
-      };
-      this.uploadAsset = function(e) {
-        var file, files, readFile, _i, _len, _results;
-        e.preventDefault();
-        e.stopPropagation();
-        $(e.target).removeClass('hover');
-        files = e.dataTransfer.files;
-        readFile = function(f) {
-          var reader;
-          if (f.type.match(/image.*/)) {
-            reader = new FileReader();
-            reader.onloadend = this.util.imgPreview;
-            return reader.readAsDataURL(f);
-          }
-        };
-        _results = [];
-        for (_i = 0, _len = files.length; _i < _len; _i++) {
-          file = files[_i];
-          _results.push(readFile(file));
-        }
-        return _results;
-      };
-      this.placeAsset = function(ev) {};
-      this.panel = {
-        make: function() {
-          var raw;
-          raw = _this.config.panel.panel_html;
-          $('body').append(raw);
-          $('#CMS_panel').css({
-            'bottom': '0px'
-          });
-          $('#CMS_wrap').css({
-            'opacity': 1
-          });
-          return $('#CMS_panel').animate({
-            'bottom': '60px',
-            'opacity': 1
-          }, {
-            'duration': 500,
-            'easing': 'easeInOutExpo'
-          });
-        },
-        live: function() {
-          var axn, bu, cmds, frame, that, up;
-          cmds = _this.config.panel.commands;
-          frame = _this.config.scroller.frame;
-          up = document.getElementById('upload');
-          that = _this;
-          $('.scroll').each(function() {
-            var $t, rel, t;
-            t = this;
-            $t = $(t);
-            rel = String($t.attr('href')).slice(1);
-            $t.attr('id', 'scr' + rel);
-            $t.attr('href', 'javascript:void(0);');
-            $('#' + frame).data('scroller', {
-              axis: 'horizontal'
-            });
-            that.util.bind($t, 'click', that.util.wrap(that.scroller.jump, rel));
-            return that.config.scroller.init = true;
-          });
-          _this.scroller.classify(frame);
-          $('.pop').each(function() {
-            var $t, rel, t;
-            t = this;
-            $t = $(t);
-            rel = $t.attr('name');
-            $t.removeAttr('name');
-            $t.data('pop', {
-              target: rel
-            });
-            that.util.bind($t, 'click', that.util.wrap(that.pop.pop, rel));
-            return that.config.pop.init = true;
-          });
-          _this.util.makeDragDrop(up);
-          for (bu in cmds) {
-            axn = cmds[bu];
-            _this.util.bind($('#cms_' + bu), 'click', axn);
-          }
-          return _this.config.panel.init = true;
-        },
-        die: function() {
-          var _axn, _bu, _cmds, _results;
-          _cmds = _this.config.panel.commands;
-          _results = [];
-          for (_bu in _cmds) {
-            _axn = _cmds[_bu];
-            _results.push($('#cms_' + _bu).unbind('click'));
-          }
-          return _results;
-        },
-        destroy: function() {
-          var deep;
-          $('#m-overlay').unbind();
-          deep = true;
-          if (editing === false) {
-            return $('#CMS_panel').animate({
-              'opacity': 0,
-              'bottom': '0px'
-            }, {
-              duration: 450,
-              easing: 'easeInOutExpo',
-              complete: function() {
-                if (deep === true) {
-                  return $('#CMS_wrap').remove();
-                } else {
-                  return $('#CMS_wrap').css({
-                    'opacity': 1
-                  });
-                }
-              }
-            });
-          }
-        },
-        toggle: function() {
-          if (_this.util.is($('#CMS_panel'))) {
-            _this.panel.destroy;
-            return $('#cms_span').html('&gt;');
-          } else {
-            _this.panel.make();
-            _this.panel.live();
-            return $('#cms_span').html('x');
-          }
-        }
-      };
-      this.scroller = {
-        classify: function(ctx) {
-          var $c, $d;
-          $c = $('#' + ctx);
-          $d = $c.data('scroller');
-          if (($d.axis === 'horizontal') || !_this.util.is($d.axis)) {
-            $('.cms_pane').removeClass('left').removeClass('clear').addClass('in-table');
-            return $c.addClass('nowrap');
-          } else if ($d.axis === 'vertical') {
-            $c.removeClass('nowrap');
-            return $('.cms_pane').removeClass('in-table').addClass('left').addClass('clear');
-          }
-        },
-        jump: function(reL, cback, eVent) {
-          var $d, $f, anim, diff, f_o, r_o;
-          if (_this.util.is(e)) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          $f = $('#' + _this.config.scroller.frame);
-          $d = $f.data('scroller');
-          anim = _this.util.is(cback) ? $.extend({}, _this.config.scroller.animation, {
-            complete: cback
-          }) : _this.config.scroller.animation;
-          f_o = $f.offset();
-          r_o = $('#' + reL).offset();
-          if ($d.axis === 'vertical') {
-            diff = Math.floor(r_o.top - f_o.top);
-            return $f.animate({
-              scrollTop: '+=' + diff
-            }, anim);
-          } else if ($d.axis === 'horizontal') {
-            diff = Math.floor(r_o.left - f_o.left);
-            return $f.animate({
-              scrollLeft: '+=' + diff
-            }, anim);
-          }
-        }
-      };
-      this.pop = {
-        pop: function(iD) {
-          var $t, anim, biD, pHTML, piD, popped, pos, prevSib, that;
-          that = _this;
-          $t = $('#' + iD);
-          piD = 'pop_' + iD;
-          biD = piD + '_button';
-          pos = _this.config.pop.position;
-          pHTML = $t.html();
-          prevSib = $t.prev().attr('id');
-          $b.unbind('click');
-          anim = $.extend({}, _this.config.pop.animation, {
-            complete: function() {
-              $t.remove();
-              $('#' + biD).html('pop back in');
-              that.util.bind($('#' + biD), 'click', that.util.wrap(that.pop.reset, iD, 'CMS_frame'));
-              return that.util.makeDragDrop(document.getElementById('upload'));
-            }
-          });
-          popped = '<div id="' + piD + '" class="fixed panel" style="opacity:0;">' + pHTML + '</div>';
-          $('body').append(popped);
-          $('#' + piD).css({
-            'bottom': '0px',
-            'right': pos.right,
-            'z-index': 989
-          });
-          $('#' + piD).animate({
-            'bottom': pos.bottom,
-            'opacity': 1
-          }, anim);
-          return _this.scroller.jump(prevSib);
-        },
-        reset: function(id, tid) {
-          var $tar, anim, bid, pid, that;
-          if (tid === false || !_this.util.is(tid)) {
-            return $('#pop_' + id).remove();
-          } else {
-            that = _this;
-            pid = 'pop_' + iD;
-            $tar = $('#' + tid);
-            bid = pid + '_button';
-            $(bid).unbind('click');
-            return anim = $.extend({}, _this.config.pop.animation, {
-              complete: function() {
-                $('#' + pid).remove();
-                $('#' + bid).html('pop me out');
-                that.util.bind($('#' + bid), 'click', that.util.wrap(that.pop.pop, id));
-                return that.util.makeDragDrop(document.getElementById('upload'));
-              }
-            });
-          }
-        }
-      };
-      this.modal = {
-        show: function(rEL, rELHTML, callBack) {
-          var modalCSS, modalHTML, modalHeight, modalWidth, _anim, _html;
-          modalCSS = {
-            opacity: 1
-          };
-          _anim = this.util.is(callBack) ? $.extend({}, this.config.modal.animation, {
-            complete: callBack
-          }) : this.config.modal.animation;
-          _html = this.config.modal.html.split('*****');
-          modalHTML = _html[0] + rELHTML + _html[1];
-          modalWidth = Math.floor(this.config.modal.ratio.x * window.innerWidth);
-          modalHeight = Math.floor(this.config.modal.ratio.y * window.innerHeight);
-          modalCSS.width = modalWidth + 'px';
-          modalCSS.height = modalHeight + 'px';
-          modalCSS.top = Math.floor((window.innerHeight - modalHeight) / 2);
-          modalCSS.left = Math.floor((window.innerWidth - modalWidth) / 2);
-          $('body').append(this.config.overlay);
-          $('#m-overlay').animate({
-            opacity: 0.5
-          }, {
-            duration: 400,
-            easing: 'easeInOutExpo',
-            complete: function() {
-              return this.util.bind($('#m-overlay'), 'click', this.modal.hide);
-            }
-          });
-          $('body').append(modalHTML);
-          $('#modal-wrap').css({
-            opacity: 1
-          });
-          if (this.config.modal.rounded) $('#modal').addClass('rounded');
-          $('#modal').css(this.config.modal.initial);
-          $('#modal').animate(modalCSS, _anim);
-          return this.util.bind($('#mod-close'), 'click', this.modal.hide);
-        },
-        hide: function() {
-          var $id, _end;
-          $id = $('#modal');
-          _end = $.extend({}, this.config.modal.initial, {
-            left: 0 + 'px',
-            width: window.innerWidth,
-            right: 0 + 'px',
-            opacity: 0.5
-          });
-          setTimeout(function() {
-            $id.removeClass('rounded');
-            return $id.css({
-              padding: 0
-            });
-          }, 150);
-          return $id.animate(_end, {
-            duration: 400,
-            easing: 'easeInOutExpo',
-            complete: function() {
-              $id.animate({
-                opacity: 0
-              }, {
-                duration: 250,
-                easing: 'easeInOutExpo'
-              });
-              return $('#m-overlay').animate({
-                opacity: 0
-              }, {
-                duration: 500,
-                easing: 'easeInOutExpo',
-                complete: function() {
-                  $('#m-overlay').remove();
-                  return $('#modal_wrap').remove();
-                }
-              });
-            }
-          });
-        }
-      };
-      apptools.dev.verbose('CMS', 'Initializing Momentum extensible management system...');
-      that = this;
-      $('body').append(this.config.panel.status_html);
-      setTimeout(function() {
-        $('#cms_span').animate({
-          'opacity': 1
-        }, {
-          duration: 450,
-          easing: 'easeInOutExpo'
-        });
-        return $('#cms_edit_on').animate({
-          'opacity': 1,
-          'left': '-155px'
-        }, {
-          duration: 400,
-          easing: 'easeInOutExpo',
-          complete: function() {
-            return setTimeout(function() {
-              return $('#cms_edit_on').animate({
-                'left': '-290px'
-              }, {
-                duration: 400,
-                easing: 'easeInOutExpo',
-                complete: function() {
-                  that.util.bind($('#cms_edit_on'), 'click', that.panel.toggle);
-                  return that.panel.toggle();
-                }
-              });
-            }, 1750);
-          }
-        });
-      }, 500);
-      $('.editable').each(function(){
-            var t = this;
-            that.util.bind($(t), 'click', that.util.wrap(that.edit, t));
-        });;
-    }
-
-    return ContentManagerAPI;
-
-  })(CoreAdminAPI);
-
-  this.__apptools_preinit.abstract_base_classes.push(ContentManagerAPI);
-
-  this.__apptools_preinit.deferred_core_modules.push({
-    module: ContentManagerAPI,
-    package: 'admin'
   });
 
   AppTools = (function() {
@@ -2761,15 +3048,16 @@
         state: {
           status: 'NOT_READY',
           flags: ['base'],
+          preinit: {},
           modules: {},
           classes: {},
           interfaces: {},
           integrations: [],
           add_flag: function(flagname) {
-            return this.sys.flags.push(flagname);
+            return _this.sys.state.flags.push(flagname);
           },
           consider_preinit: function(preinit) {
-            var cls, interface, lib, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
+            var cls, lib, _i, _interface, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
             if (preinit.abstract_base_classes != null) {
               _ref = preinit.abstract_base_classes;
               for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -2795,8 +3083,8 @@
             if (preinit.abstract_feature_interfaces != null) {
               _ref3 = preinit.abstract_feature_interfaces;
               for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
-                interface = _ref3[_k];
-                _this.sys.interfaces.install(interface.name, interface.adapter);
+                _interface = _ref3[_k];
+                _this.sys.interfaces.install(_interface.name, _interface.adapter);
               }
             }
             return preinit;
@@ -2804,7 +3092,7 @@
         },
         modules: {
           install: function(module, mountpoint_or_callback, callback) {
-            var module_name, mountpoint, pass_parent, target_mod;
+            var module_name, mountpoint, pass_parent, target_mod, _base;
             if (mountpoint_or_callback == null) mountpoint_or_callback = null;
             if (callback == null) callback = null;
             if (mountpoint_or_callback != null) {
@@ -2833,20 +3121,24 @@
             }
             if (!(mountpoint[module_name] != null)) {
               if (pass_parent) {
-                target_mod = mountpoint[module_name] = new module(_this, mountpoint, window);
+                target_mod = new module(_this, mountpoint, window);
+                mountpoint[module_name] = target_mod;
                 _this.sys.state.modules[module_name] = {
                   module: target_mod,
                   classes: {}
                 };
               } else {
-                target_mod = mountpoint[module_name] = new module(_this, window);
+                target_mod = new module(_this, window);
+                mountpoint[module_name] = target_mod;
                 _this.sys.state.modules[module_name] = {
                   module: target_mod,
                   classes: {}
                 };
               }
             }
-            if (module._init != null) module._init(_this);
+            if (typeof (_base = mountpoint[module_name])._init === "function") {
+              _base._init(_this);
+            }
             if ((_this.dev != null) && (_this.dev.verbose != null)) {
               _this.dev.verbose('ModuleLoader', 'Installed module:', target_mod, ' at mountpoint: ', mountpoint, ' under the name: ', module_name);
             }
@@ -2971,6 +3263,7 @@
         return events.register(_this.sys.core_events);
       });
       if (window.__apptools_preinit != null) {
+        this.sys.state.preinit = window.__apptools_preinit;
         this.sys.state.consider_preinit(window.__apptools_preinit);
       }
       if ((window != null ? window.Modernizr : void 0) != null) {
@@ -3001,12 +3294,7 @@
         });
       }
       if ((window != null ? window.Backbone : void 0) != null) {
-        this.sys.libraries.install('Backbone', window.Backbone, function(library) {
-          window.AppToolsView.prototype.apptools = _this;
-          window.AppToolsModel.prototype.apptools = _this;
-          window.AppToolsRouter.prototype.apptools = _this;
-          return window.AppToolsCollection.prototype.apptools = _this;
-        });
+        this.sys.libraries.install('Backbone', window.Backbone);
       }
       if ((window != null ? window.Lawnchair : void 0) != null) {
         this.sys.libraries.install('Lawnchair', window.Lawnchair, function(library) {

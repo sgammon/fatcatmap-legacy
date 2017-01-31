@@ -1,0 +1,11 @@
+## Loads stuf into Google BigQuery
+
+bq load --skip_leading_rows=1 rawdata.lobbying_agency gs://data.fatcatmap.com/uncompressed/lobbying/lobbying_agency.csv id:integer,transaction_id:string,agency_name:string,agency_ext_id:integer
+
+bq load --skip_leading_rows=1 rawdata.lobbying_bills gs://data.fatcatmap.com/uncompressed/lobbying/lobbying_bill.csv id:integer,bill_id:integer,issue_id:integer,congress_no:integer,bill_type_raw:string,bill_type:string,bill_no:integer,bill_name:string
+
+bq load --skip_leading_rows=1 rawdata.lobbying_issues gs://data.fatcatmap.com/uncompressed/lobbying/lobbying_issue.csv id:integer,year:integer,transaction_id:string,general_issue_code:string,general_issue:string,specific_issue:string
+
+bq load --skip_leading_rows=1 rawdata.lobbying gs://data.fatcatmap.com/uncompressed/lobbying/lobbying_lobbying.csv transaction_id:string,transaction_type:string,transaction_type_desc:string,year:integer,filing_type:string,filing_included_nsfs:string,amount:float,registrant_name:string,registrant_is_firm:string,client_name:string,client_category:string,client_ext_id:string,client_parent_name:string,include_in_industry_totals:string,use:string,affiliate:string
+
+bq load --skip_leading_rows=1 rawdata.lobbyists gs://data.fatcatmap.com/uncompressed/lobbying/lobbying_lobbyist.csv id:integer,year:integer,transaction_id:string,lobbyist_name:string,lobbyist_ext_id:string,candidate_ext_id:string,government_position:string,member_of_congress:string

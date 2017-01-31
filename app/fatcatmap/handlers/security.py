@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from project.handlers import WebHandler
+from fatcatmap.handlers import WebHandler
 
 
 class Login(WebHandler):
@@ -8,8 +8,24 @@ class Login(WebHandler):
 
     def get(self):
 
+        if hasattr(self, 'force_hostname') and getattr(self, 'force_hostname'):
+            hostname = self.force_hostname
+        else:
+            hostname = self.request.host
+        if hasattr(self, 'force_https_assets') and getattr(self, 'force_https_assets'):
+            protocol = 'https'
+        else:
+            protocol = self.request.environ.get('HTTP_SCHEME', 'http')
+
+        referrer = self.request.environ.get('HTTP_REFERRER', '/')
+        if referrer != '/':
+            referrer_path = '/'.join(str(referrer.split('//')[1:][0]).split('/')[1:])
+        else:
+            referrer_path = ''
+        redirect_path = '/'.join(['://'.join([protocol, hostname]), referrer_path])
+
         try:
-            login_url = self.api.users.create_login_url(self.request.environ.get('HTTP_REFERRER', '/'))
+            login_url = self.api.users.create_login_url(redirect_path)
             if login_url is not None:
                 return self.redirect(login_url)
 

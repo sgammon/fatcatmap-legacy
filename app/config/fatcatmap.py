@@ -126,3 +126,27 @@ config['apptools.project.pipelines'] = {
     }
 
 }
+
+config['fatcatmap.classes.WebHandler'] = {
+
+
+    'debug': False,
+    'logging': True,
+
+    'integrations': {
+
+        'gravatar': {
+            'enabled': True,
+            'endpoints': {
+                'http': 'www.gravatar.com',
+                'https': 'secure.gravatar.com'
+            }
+        }
+
+    },
+
+    #'extensions': {
+    #    'load': ['FragmentCache', 'DynamicContent', 'MemcacheBytecodeCache']
+    #}
+
+}

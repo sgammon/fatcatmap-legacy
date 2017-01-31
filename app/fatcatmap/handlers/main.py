@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from project.handlers import WebHandler
+from fatcatmap.handlers import WebHandler
 
 
 class Landing(WebHandler):
@@ -8,7 +8,19 @@ class Landing(WebHandler):
 
     def get(self):
 
-        ''' Render the template at "app/templates/main/helloworld.html". '''
+        ''' Render the template at "app/templates/main/mapper.html". '''
 
-        self.render('main/helloworld.html')
+        self.render('main/mapper.html')
         return
+
+
+class About(WebHandler):
+
+	''' Displays some basic info about who we are and what we do. '''
+
+	def get(self):
+
+		''' Render the template at "app/templates/main/about.html". '''
+
+		self.render('main/about.html')
+		return

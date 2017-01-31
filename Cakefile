@@ -1,3 +1,5 @@
+## == OPENFIRE CAKEFILE v 1.0 == ##
+
 fs = require 'fs'
 path = require 'path'
 util = require 'util'
@@ -23,12 +25,12 @@ defaults =
 out =
 
 	flags:
-		header: '\033[95m'
-		blue: '\033[94m'
-		green: '\033[92m'
-		yellow: '\033[93m'
-		red: '\033[91m'
-		end: '\033[0m'
+		header: ''
+		blue: ''
+		green: ''
+		yellow: ''
+		red: ''
+		end: ''
 
 		wrap: (message, flag) ->
 			if defaults.colorize
@@ -98,8 +100,14 @@ out =
 		op.on 'exit', (code) =>
 			callback?() if code is 0
 
-	exec: (command, callback) ->
-		return exec command, (error, stdout, stderr) =>
+	exec: (command, callback, stdout, stderr) ->
+
+		options =
+			stdio: 'inherit'
+			encoding: 'utf8'
+
+		return exec command, options, (error, stdout, stderr) =>
+
 			if error is null
 				callback?(stdout)
 			else
@@ -114,6 +122,8 @@ option 'c', '--config [STR]', 'path to project feature/skeleton config (defaults
 option 's', '--skeleton [STR]', 'different skeleton branch to install (defaults to \'py27-base\')'
 option 'cm', '--compass', 'enable compass support, if it\'s set to off by default'
 option 'cs', '--coffee', 'enable coffeescript support, if it\'s set to off by default'
+option 'app', '--appid [STR]', 'specify the appid you want to deploy to, when running cake `deploy` or cake `serve`'
+option 'vid', '--version [STR]', 'specify the version you want to deploy to, when running cake `deploy` or cake `serve`'
 
 
 task 'echo', 'i am rubber and you are glue...', (options) =>
@@ -267,7 +277,54 @@ task 'run', 'run apptools\' local dev server', (options) ->
 		out.spawn 'compass', 'compass', ['watch'], compass_done, compass_data, compass_err
 
 
-task 'serve', 'deploy fatcatmap to appengine', (options) ->
+task 'deploy', 'compile all assets and templates and deploy to appengine', (options) ->
+
+	out.shout "deploy", "Beginning deploy routine...", true
+
+	invoke_order = []
+	add_to_invoke = (op, message) =>
+		out.say "deploy", "Preparing to "+message+'...'
+		invoke_order.push(op)
+
+	appcfg_done = (code) =>
+		out.shout 'deploy', 'Deploy finished! :)'
+
+	appcfg_data = (data) =>
+		out.whisper data
+
+	appcfg_err = (data) =>
+		out.whisper data
+
+	add_to_invoke('cake compile:sass', 'compile SASS assets')
+	add_to_invoke('cake minify:sass', 'minify SASS assets')
+	add_to_invoke('cake compile:coffee', 'compile CoffeeScript assets')
+	add_to_invoke('cake minify:coffee', 'minify CoffeeScript assets')
+	add_to_invoke('cake clean:templates', 'clean compiled Jinja2 templates')
+	add_to_invoke('cake compile:templates', 'compile Jinja2 templates')
+
+	if options.version?
+		if options.appid?
+			cmd = 'update app -A ' + options.appid + ' -V ' + options.version + ' --oauth2'
+		else
+			cmd = 'update app ' + '-V ' + options.version + ' --oauth2'
+	else
+		if options.appid?
+			cmd = 'update app ' + '-A ' + options.appid + ' --oauth2'
+		else
+			cmd = 'update app --oauth2'
+
+	out.say "deploy", "Preparing AppEngine deploy routine..."
+	cmd = fixpath('tools', 'bin', 'appcfg')+' '+cmd
+
+	cmdstring = ''
+	for invoke in invoke_order
+		cmdstring += invoke + ' && '
+
+	out.say "deploy", "Invoking..."
+	out.exec 'start "Deploying..." /I /WAIT cmd /k "prompt deploy: && cls ' + cmdstring + 'sleep 3 && ' + cmd + ' && pause && exit"', appcfg_done, appcfg_data, appcfg_err
+
+
+task 'serve', 'deploy app to appengine', (options) ->
 
 	appcfg_done = (code) =>
 		out.shout 'serve', 'Appcfg exited with code '+code+'.'
@@ -307,7 +364,7 @@ task 'scaffold', 'download a skeleton from git and install it', (options) =>
 	out.say 'skeleton', 'Target directory: "'+skeleton_dir+'".'
 
 	gitfinish = () =>
-		wrench.chmodSyncRecursive(skeleton_dir, 0755);
+		wrench.chmodSyncRecursive(skeleton_dir, '0755')
 		out.say 'install', 'Installation complete at: app/'
 		out.shout 'skeleton', 'Finished skeleton installation.'
 
@@ -331,7 +388,7 @@ task 'scaffold', 'download a skeleton from git and install it', (options) =>
 task 'project:bootstrap', 'generate a buildout executable', (options) =>
 
 	#f = fs.openSync(fixpath(__dirname, '.installed.cfg'), 'a+')
-	#fs.chmodSync(fixpath(__dirname, '.installed.cfg'), 0777)
+	#fs.chmodSync(fixpath(__dirname, '.installed.cfg'), '0777')
 
 	bootstrap_done = () =>
 		out.say 'bootstrap', out.flags.wrap('Bootstrap complete.', out.flags.green)+' From now on, you can use `'+out.flags.wrap('cake make', out.flags.green)+'` to update dependencies.'
@@ -422,7 +479,7 @@ task 'update:apptools', 'download and install apptools library', (options) ->
 	out.say 'apptools', 'Target directory: "'+apptools_dir+'".'
 
 	gitfinish = () =>
-		wrench.chmodSyncRecursive(apptools_dir, 0755);
+		wrench.chmodSyncRecursive(apptools_dir, '0755');
 		out.say 'apptools', 'Apptools installation complete at: app/lib/apptools'
 		out.shout 'apptools', 'Finished skeleton installation.'
 
@@ -495,7 +552,7 @@ task 'clean:gaelibs', 'clean GAE libraries (ndb, pipelines, mapreduce & protorpc
 							throw error
 
 		catch error
-			wrench.mkdirSyncRecursive lib_dir, 0777
+			wrench.mkdirSyncRecursive lib_dir, '0777'
 			out.say 'clean', 'Library "'+libs[lib]+'" not found. Creating empty lib directory.'
 			continue
 
@@ -599,52 +656,55 @@ task 'compile:coffee', 'compile js codebase', (options) ->
 		out.whisper data
 
 	out.shout 'coffee', 'Compiling CoffeeScript...', true
-	out.say 'coffee', 'Compiling AppTools base...'
 
 	total_ops = total_ops + 1
 	node_bin = 'node'
 	js_prefix = fixpath(__dirname, 'app', 'assets', 'js')
 	coffee_bin = fixpath(__dirname, 'node_modules', 'coffee-script', 'bin', 'coffee')
+
+	out.shout 'coffee', 'Compiling AppTools JS...'
 	out.spawn 'coffee', node_bin, [ coffee_bin,
 									'--join', fixpath(js_prefix, 'static', 'apptools', 'base.js'),
 									'--compile', fixpath(js_prefix, 'source', 'apptools', '_milk.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', '_core.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'util.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'dev.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'model.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'events.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'agent.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'dispatch.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'storage.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', '_core.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'dom.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'indexed.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'sql.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', '_init.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'rpc.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'user.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'push.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'render.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'widgets', '_core.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', '_init.coffee')]
 
+	out.shout 'coffee', 'Compiling AppTools JS for admins...'
 	out.spawn 'coffee', node_bin, [ coffee_bin,
 									'--join', fixpath(js_prefix, 'static', 'apptools', 'base.admin.js'),
 									'--compile', fixpath(js_prefix, 'source', 'apptools', '_milk.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', '_core.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'util.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'dev.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'model.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'events.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'agent.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'dispatch.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'storage.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', '_core.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'dom.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'indexed.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', 'sql.coffee'),
+									fixpath(js_prefix, 'source', 'apptools', 'storage', '_init.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'rpc.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'user.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'push.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', 'render.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'widgets', '_core.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'admin', '_core.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'admin', 'blog.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'admin', 'page.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'admin', 'site.coffee'),
-									fixpath(js_prefix, 'source', 'apptools', 'admin', 'content.coffee'),
 									fixpath(js_prefix, 'source', 'apptools', '_init.coffee')]
-
-
 	out.say 'coffee', 'Done :)'
 
 
@@ -698,13 +758,7 @@ task 'minify:coffee', 'minify js codebase', (options) ->
 	files_to_minify = [
 
 		["AppTools Base", fixpath(js_prefix, 'static', 'apptools', 'base.min.js'), fixpath(js_prefix, 'static', 'apptools', 'base.js')],
-		["AppTools Admin", fixpath(js_prefix, 'static', 'apptools', 'base.admin.min.js'), fixpath(js_prefix, 'static', 'apptools', 'base.admin.js')],
-		["AmplifyJS", fixpath(js_prefix, 'static', 'core', 'amplify.min.js'), fixpath(js_prefix, 'static', 'core', 'amplify.js')],
-		["BackboneJS", fixpath(js_prefix, 'static', 'core', 'backbone.min.js'), fixpath(js_prefix, 'static', 'core', 'backbone.js')],
 		["jQuery", fixpath(js_prefix, 'static', 'core', 'jquery.min.js'), fixpath(js_prefix, 'static', 'core', 'jquery.js')],
-		["Lawnchair", fixpath(js_prefix, 'static', 'core', 'lawnchair.min.js'), fixpath(js_prefix, 'static', 'core', 'lawnchair.js')],
-		["Modernizr", fixpath(js_prefix, 'static', 'core', 'modernizr.min.js'), fixpath(js_prefix, 'static', 'core', 'modernizr.js')]
-
 		## PUT YER FILES HERE FOR MINIFICATION
 
 	]
@@ -714,7 +768,7 @@ task 'minify:coffee', 'minify js codebase', (options) ->
 	for file in files_to_minify
 		total_ops = total_ops + 1
 		out.say 'uglifyjs', 'Minifying '+file[0]+'...'
-		out.spawn 'uglify', 'node', [fixpath(__dirname, 'node_modules', 'uglify-js', 'bin', 'uglifyjs'), '-o', file[1], file[2]], minify_done, minify_data, minify_err
+		out.spawn 'uglify', 'node', [fixpath(__dirname, 'node_modules', 'uglify-js', 'bin', 'uglifyjs'), '-nm', '-o', file[1], file[2]], minify_done, minify_data, minify_err
 
 
 ######## =======  Templates  ========== ########

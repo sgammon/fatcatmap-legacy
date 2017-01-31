@@ -1,8 +1,8 @@
 handlers:
-- url: /_ah/mapreduce/pipeline/images
+- url: /mapreduce/pipeline/images
   static_dir: mapreduce/lib/pipeline/ui/images
 
-- url: /_ah/mapreduce(/.*)?
-  script: mapreduce.main.APP
+- url: /mapreduce(/.*)?
+  script: mapreduce/main.py
   login: admin
 

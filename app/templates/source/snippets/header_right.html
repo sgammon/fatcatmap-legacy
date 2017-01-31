@@ -1,0 +1,13 @@
+{% if util.api.users.get_current_user() is not none %}
+<div id='authbox'>
+	<div id='userbox' data-user-nickname='{{ util.api.users.get_current_user().nickname() }}'>
+		<b><a href='#'>Welcome back, {{ util.api.users.get_current_user().nickname() }}!</a></b>
+		<img src="{{ gravatarify(util.api.users.get_current_user().email(), 'jpg', 32) }}" alt='you!' />
+	</div>
+</div>
+{% else %}
+<div id='authbox'>
+	<b><a href='{{ link("auth/login") }}' title="log in!">log in!</a></b>
+	<b><a href='{{ link("about") }}'>about</a></b>
+</div>
+{% endif %}

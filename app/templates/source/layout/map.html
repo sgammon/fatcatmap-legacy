@@ -1,0 +1,19 @@
+{% extends "core/appstage.html" %}
+
+{% block stage %}
+	<div id='mapper' data-role='visualizer' data-type='graph'>
+		{% block mapper %}{% endblock %}
+	</div><!-- close #mapper -->
+{% endblock stage %}
+
+{% block frame %}
+	<!-- Data/View Context -->
+	<div id='context'>
+		{% block context %}{% endblock context %}
+	</div><!-- end #context -->
+
+	<!-- Controls/Visualizer Navigation -->
+	<div id='controls'>
+		{% block controls %}{% endblock controls %}
+	</div><!-- end #controls -->
+{% endblock %}

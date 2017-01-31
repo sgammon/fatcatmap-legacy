@@ -40,13 +40,14 @@ class AppTools
             state:
                 status: 'NOT_READY' # System status
                 flags: ['base']     # System flags
+                preinit: {}         # System preinit
                 modules: {}         # Installed system modules
                 classes: {}         # Installed AppTools-related classes
                 interfaces: {}      # Installed feature interfaces
                 integrations: []    # Installed library integrations
 
-                add_flag: (flagname) ->
-                    @sys.flags.push flagname
+                add_flag: (flagname) =>
+                    @sys.state.flags.push flagname
 
                 consider_preinit: (preinit) =>
 
@@ -68,8 +69,8 @@ class AppTools
 
                     ## Preinit: consider feature interfaces
                     if preinit.abstract_feature_interfaces?
-                        for interface in preinit.abstract_feature_interfaces
-                            @sys.interfaces.install(interface.name, interface.adapter)
+                        for _interface in preinit.abstract_feature_interfaces
+                            @sys.interfaces.install(_interface.name, _interface.adapter)
 
                     return preinit
 
@@ -108,15 +109,16 @@ class AppTools
                     ## Mount module
                     if not mountpoint[module_name]?
                         if pass_parent
-                            target_mod = mountpoint[module_name] = new module(@, mountpoint, window)
+                            target_mod = new module(@, mountpoint, window)
+                            mountpoint[module_name] = target_mod
                             @sys.state.modules[module_name] = {module: target_mod, classes: {}}
                         else
-                            target_mod = mountpoint[module_name] = new module(@, window)
+                            target_mod = new module(@, window)
+                            mountpoint[module_name] = target_mod
                             @sys.state.modules[module_name] = {module: target_mod, classes: {}}
 
                     ## Call module init callback, if there is one
-                    if module._init?
-                        module._init(@)
+                    mountpoint[module_name]._init?(@)
 
                     ## If dev is available, log this
                     if @dev? and @dev.verbose?
@@ -239,6 +241,7 @@ class AppTools
 
         ## Consider preinit: export/catalog preinit classes & libraries
         if window.__apptools_preinit?
+            @sys.state.preinit = window.__apptools_preinit
             @sys.state.consider_preinit(window.__apptools_preinit)
 
 
@@ -269,11 +272,7 @@ class AppTools
 
         # BackboneJS
         if window?.Backbone?
-            @sys.libraries.install 'Backbone', window.Backbone, (library) =>
-                window.AppToolsView::apptools = @
-                window.AppToolsModel::apptools = @
-                window.AppToolsRouter::apptools = @
-                window.AppToolsCollection::apptools = @
+            @sys.libraries.install 'Backbone', window.Backbone
 
         # Lawnchair
         if window?.Lawnchair?

@@ -11,10 +11,11 @@ from webapp2_extras.routes import HandlerPrefixRoute
 
 rules = [
 
-    HandlerPrefixRoute('project.handlers.', [
+    HandlerPrefixRoute('fatcatmap.handlers.', [
 
         ## === Main URLs === ##
         Route('/', name='landing', handler='main.Landing'),
+        Route('/about', name='about', handler='main.About'),
         Route('/offline', name='offline', handler='main.Offline'),
 
         ## === Security URLs === ##

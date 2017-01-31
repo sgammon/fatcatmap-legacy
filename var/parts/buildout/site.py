@@ -61,6 +61,7 @@ ImportError exception, it is silently ignored.
 import sys
 import os
 import __builtin__
+import traceback
 
 # Prefixes for site-packages; add additional prefixes like /usr/local here
 PREFIXES = [sys.prefix, sys.exec_prefix]
@@ -155,17 +156,26 @@ def addpackage(sitedir, name, known_paths):
     except IOError:
         return
     with f:
-        for line in f:
+        for n, line in enumerate(f):
             if line.startswith("#"):
                 continue
-            if line.startswith(("import ", "import\t")):
-                exec line
-                continue
-            line = line.rstrip()
-            dir, dircase = makepath(sitedir, line)
-            if not dircase in known_paths and os.path.exists(dir):
-                sys.path.append(dir)
-                known_paths.add(dircase)
+            try:
+                if line.startswith(("import ", "import\t")):
+                    exec line
+                    continue
+                line = line.rstrip()
+                dir, dircase = makepath(sitedir, line)
+                if not dircase in known_paths and os.path.exists(dir):
+                    sys.path.append(dir)
+                    known_paths.add(dircase)
+            except Exception as err:
+                print >>sys.stderr, "Error processing line {:d} of {}:\n".format(
+                    n+1, fullname)
+                for record in traceback.format_exception(*sys.exc_info()):
+                    for line in record.splitlines():
+                        print >>sys.stderr, '  '+line
+                print >>sys.stderr, "\nRemainder of file ignored"
+                break
     if reset:
         known_paths = None
     return known_paths
@@ -289,8 +299,6 @@ def getsitepackages():
 
         if sys.platform in ('os2emx', 'riscos'):
             sitepackages.append(os.path.join(prefix, "Lib", "site-packages"))
-        elif sys.platform == 'darwin' and prefix == sys.prefix:
-            sitepackages.append(os.path.join(prefix, "Extras", "lib", "python"))
         elif os.sep == '/':
             sitepackages.append(os.path.join(prefix, "lib",
                                         "python" + sys.version[:3],
@@ -319,12 +327,12 @@ def addsitepackages(known_paths):
     base = os.path.dirname(base)
     base = os.path.dirname(base)
     base = os.path.dirname(base)
-    setuptools_path = join(base, 'eggs/distribute-0.6.24-py2.7.egg')
+    setuptools_path = join(base, 'eggs/distribute-0.6.28-py2.7.egg')
     sys.path.append(setuptools_path)
     known_paths.add(os.path.normcase(setuptools_path))
     import pkg_resources
     buildout_paths = [
-        join(base, 'eggs/distribute-0.6.24-py2.7.egg'),
+        join(base, 'eggs/distribute-0.6.28-py2.7.egg'),
         join(base, 'eggs/zc.buildout-1.5.2-py2.7.egg')
         ]
     for path in buildout_paths:
@@ -335,21 +343,11 @@ def addsitepackages(known_paths):
             pkg_resources.working_set.add_entry(sitedir)
     sys.__egginsert = len(buildout_paths) # Support distribute.
     original_paths = [
-        '/Library/Python/2.7/site-packages/SquareMap-1.0.1b3-py2.7.egg',
-        '/Library/Python/2.7/site-packages/RunSnakeRun-2.0.2a1-py2.7.egg',
-        '/Library/Python/2.7/site-packages/pyprof2calltree-1.1.0-py2.7.egg',
-        '/Library/Python/2.7/site-packages/PIL-1.1.7-py2.7-macosx-10.7-intel.egg',
-        '/Library/Python/2.7/site-packages/zc.buildout-1.5.2-py2.7.egg',
-        '/usr/local/lib/wxPython-2.9.2.4/lib/python2.7/site-packages/wx-2.9.2-osx_cocoa',
-        '/Library/Python/2.7/site-packages/Jinja2-2.6-py2.7.egg',
-        '/Library/Python/2.7/site-packages/Pygments-1.4-py2.7.egg',
-        '/Library/Python/2.7/site-packages/Pycco-0.2.0-py2.7.egg',
-        '/Library/Python/2.7/site-packages/pystache-0.3.1-py2.7.egg',
-        '/Library/Python/2.7/site-packages/Markdown-2.0.3-py2.7.egg',
-        '/Library/Python/2.7/site-packages/reportlab-2.5-py2.7-macosx-10.7-intel.egg',
-        '/usr/local/lib/wxPython-2.9.2.4/lib/python2.7',
-        '/usr/local/lib/wxPython-2.9.2.4/lib/python2.7/site-packages',
-        '/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/PyObjC',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/unittest2-0.5.1-py2.7.egg',
+        '/Library/Python/2.7/site-packages/pip-1.1-py2.7.egg',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages',
+        '/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/PIL',
         '/Library/Python/2.7/site-packages'
         ]
     for path in original_paths:

@@ -10,3 +10,12 @@ var/*.store
 *.svn
 .svn
 app/.sass-cache
+var/eggs
+tools/bin
+app/assets/js/static/apptools
+app/assets/js/static/fatcatmap
+app/assets/style/static/compiled
+var/parts/google_appengine
+var/downloads
+var/develop-eggs
+var/parts/temp

@@ -65,7 +65,8 @@ config['apptools.project.assets'] = {
             'assets': {
                 'modernizr': {'min': False, 'version': '2.0.6'},  # Modernizr - browser polyfill + compatibility testing
                 'jquery': {'min': True, 'version': '1.7.1'},      # jQuery: Write Less, Do More!
-                'underscore': {'min': True, 'version': '1.3.1'}   # Underscore: JavaScript's utility belt
+                'underscore': {'min': True, 'version': '1.3.1'},  # Underscore: JavaScript's utility belt
+                'd3': {'min': True, 'version': 'v2'}              # D3: data driven documents, yo
             }
 
         },
@@ -115,7 +116,7 @@ config['apptools.project.assets'] = {
             },
 
             'assets': {
-                'main': {'version': 0.1}  # reset, main, layout, forms
+                'main': {'version': 0.2}  # reset, main, layout, forms
             }
 
         },
